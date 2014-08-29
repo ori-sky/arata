@@ -13,7 +13,14 @@
  - limitations under the License.
  -}
 
-import Arata
+module Arata.TS6 where
 
-main :: IO ()
-main = run
+import Numeric (showIntAtBase)
+import Data.Char (intToDigit)
+import Text.Printf (printf)
+
+intToUid :: (Integral a, Show a) => a -> String
+intToUid x = 'A' : printf "%05s" (showIntAtBase 36 toChr x "")
+  where toChr c
+            | 0 <= c && c <= 9 = intToDigit c
+            | otherwise = toEnum (c + (65 - 10))

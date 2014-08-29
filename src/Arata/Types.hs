@@ -15,6 +15,9 @@
 
 module Arata.Types where
 
+import Control.Monad.State
+import Network.Connection (Connection)
+
 data Message = Message
     { tags      :: () -- TODO: support message tags
     , prefix    :: Maybe Prefix
@@ -35,3 +38,22 @@ data Hostmask = Hostmask
     } deriving Eq
 
 instance Show Hostmask where show (Hostmask n u h) = n ++ '!' : u ++ '@' : h
+
+data Client = Client
+    { uid       :: Integer
+    , nick      :: String
+    , ts        :: Int
+    , user      :: String
+    , realName  :: String
+    , userModes :: [Char]
+    , vHost     :: String
+    , host      :: String
+    , ip        :: String
+    , account   :: Maybe String
+    }
+
+data Env = Env { connection :: Connection }
+type Arata = StateT Env IO
+
+defaultEnv :: Connection -> Env
+defaultEnv con = Env { connection = con }
