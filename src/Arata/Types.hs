@@ -79,4 +79,5 @@ defaultCP = case eitherCP of
             >>= add_section "remote"
             >>= set "remote"    "host"          "127.0.0.1"
             >>= set "remote"    "port"          "6697"
+            >>= set "remote"    "tls"           "enabled"
             >>= set "remote"    "password"      "password"

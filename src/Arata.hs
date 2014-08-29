@@ -43,9 +43,11 @@ connect :: ConfigParser -> IO Connection
 connect cp = do
     putStrLn ("Connecting to `" ++ host' ++ ':' : show port ++ "`")
     ctx <- initConnectionContext
-    connectTo ctx (ConnectionParams host' (fromIntegral port) (Just $ TLSSettingsSimple True False False) Nothing)
+    connectTo ctx (ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
   where host' = getConfig' cp "remote" "host"
         port  = getConfig' cp "remote" "port" :: Int
+        tls   = getConfig' cp "remote" "tls"  :: Bool
+        tlsSettings = if tls then Just (TLSSettingsSimple True False False) else Nothing
 
 disconnect :: Connection -> IO ()
 disconnect con = do
