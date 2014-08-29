@@ -23,9 +23,13 @@ import Arata.Helper
 
 protoRegister :: Arata ()
 protoRegister = do
-    send ("PASS " ++ "password" ++ " TS 6 :" ++ "0AR")
+    sid <- getConfig "info" "id"
+    name <- getConfig "info" "name"
+    desc <- getConfig "info" "description"
+    password <- getConfig "remote" "password"
+    send ("PASS " ++ password ++ " TS 6 :" ++ sid)
     send "CAPAB :ENCAP QS EX IE EUID SAVE TB"
-    send "SERVER services.int 1 :Arata IRC Services"
+    send ("SERVER " ++ name ++ " 1 :" ++ desc)
 
 protoIntroduceClient :: Client -> Arata ()
 protoIntroduceClient client = send line

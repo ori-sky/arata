@@ -15,6 +15,7 @@
 
 module Arata.Types where
 
+import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Network.Connection (Connection)
 
@@ -52,8 +53,30 @@ data Client = Client
     , account   :: Maybe String
     }
 
-data Env = Env { connection :: Connection }
+data Env = Env
+    { connection    :: Connection
+    , configParser  :: ConfigParser
+    }
 type Arata = StateT Env IO
 
 defaultEnv :: Connection -> Env
-defaultEnv con = Env { connection = con }
+defaultEnv con = Env
+    { connection = con
+    , configParser  = defaultCP
+    }
+
+defaultCP :: ConfigParser
+defaultCP = case eitherCP of
+    Left e   -> error "defaultCP: something went wrong"
+    Right cp -> cp
+  where eitherCP = return emptyCP
+            >>= add_section "info"
+            >>= set "info"      "id"            "0AR"
+            >>= set "info"      "name"          "services.int"
+            >>= set "info"      "description"   "Arata IRC Services"
+            >>= add_section "local"
+            >>= set "local"     "password"      "password"
+            >>= add_section "remote"
+            >>= set "remote"    "host"          "127.0.0.1"
+            >>= set "remote"    "port"          "6697"
+            >>= set "remote"    "password"      "password"

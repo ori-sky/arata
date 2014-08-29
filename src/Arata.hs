@@ -17,6 +17,7 @@
 
 module Arata where
 
+import Data.ConfigFile.Monadic
 import Data.Time.Clock.POSIX
 import Control.Monad.State
 import Control.Exception (bracket)
@@ -24,27 +25,27 @@ import Control.Concurrent (threadDelay)
 import System.IO.Error
 import Network.Connection
 import Arata.Types
+import Arata.Config
 import Arata.Message
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
---sid = "0AR"
-host' = "127.0.0.1"
-port = 6667
-password = "password"
---remotePassword = "password"
 vHost' = "services.int"
 
 run :: IO ()
 run = forever $ do
-    tryIOError $ bracket connect disconnect (evalStateT runLoop . defaultEnv)
+    cp <- loadConfig' "arata.conf"
+    tryIOError $ bracket (connect cp) disconnect (f cp)
     threadDelay 3000000
+  where f cp = evalStateT (setEnvConfigParser cp >> runLoop) . defaultEnv
 
-connect :: IO Connection
-connect = do
+connect :: ConfigParser -> IO Connection
+connect cp = do
     putStrLn ("Connecting to `" ++ host' ++ ':' : show port ++ "`")
     ctx <- initConnectionContext
-    connectTo ctx (ConnectionParams host' port Nothing Nothing)
+    connectTo ctx (ConnectionParams host' (fromIntegral port) (Just $ TLSSettingsSimple True False False) Nothing)
+  where host' = getConfig' cp "remote" "host"
+        port  = getConfig' cp "remote" "port" :: Int
 
 disconnect :: Connection -> IO ()
 disconnect con = do
@@ -62,9 +63,11 @@ loop = forever $ recv >>= \case
     Nothing   -> return ()
 
 handleMessage :: Message -> Arata ()
-handleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = unless (pass == password) $ do
-    protoDisconnect "Invalid password"
-    fail "Invalid password"
+handleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = do
+    password <- getConfig "local" "password"
+    unless (pass == password) $ do
+        protoDisconnect "Invalid password"
+        fail "Invalid password"
 handleMessage (Message _ _ "SERVER" _) = do
     ts <- liftIO (fmap round getPOSIXTime)
     send ("SVINFO 6 6 0 :" ++ show ts)

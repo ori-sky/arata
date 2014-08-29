@@ -17,9 +17,11 @@ module Arata.Helper where
 
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8 (pack, unpack)
+import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Network.Connection
 import Arata.Types
+import Arata.Config
 
 send :: String -> Arata ()
 send line = do
@@ -35,3 +37,11 @@ recv = do
             | BS.isInfixOf (pack "\r\n") bs = (Just (unpack s), BS.drop 2 ss)
             | otherwise = (Nothing, bs)
           where (s, ss) = BS.breakSubstring (pack "\r\n") bs
+
+setEnvConfigParser :: ConfigParser -> Arata ()
+setEnvConfigParser cp = modify (\env -> env { configParser = cp })
+
+getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
+getConfig section option = do
+    cp <- gets configParser
+    return (getConfig' cp section option)
