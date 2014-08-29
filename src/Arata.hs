@@ -75,7 +75,7 @@ handleMessage (Message _ _ "SERVER" _) = do
     send ("SVINFO 6 6 0 :" ++ show ts)
     burst
 handleMessage (Message _ _ "PING" (server1:_)) = send ("PONG :" ++ server1)
-handleMessage _ = return ()
+handleMessage m = protoHandleMessage m
 
 burst :: Arata ()
 burst = do

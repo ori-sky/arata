@@ -39,3 +39,15 @@ protoIntroduceClient client = send line
 
 protoDisconnect :: String -> Arata ()
 protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
+
+protoHandleMessage :: Message -> Arata ()
+protoHandleMessage m@(Message _ _ "PRIVMSG" (uid:_)) = do
+    sid <- getConfig "info" "id"
+    if uid == sid ++ "A00001" then handleCS m else return ()
+protoHandleMessage _ = return ()
+
+handleCS :: Message -> Arata ()
+handleCS (Message _ prefix _ (_:cmd:xs)) = do
+    sid <- getConfig "info" "id"
+    send (':' : sid ++ "A00001 NOTICE " ++ show (fromMaybe NoPrefix prefix) ++ " :Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands.")
+handleCS _ = return ()

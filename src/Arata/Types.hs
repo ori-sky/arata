@@ -26,9 +26,10 @@ data Message = Message
     , params    :: [String]
     } deriving Show
 
-data Prefix = StringPrefix String | MaskPrefix Hostmask deriving Eq
+data Prefix = NoPrefix | StringPrefix String | MaskPrefix Hostmask deriving Eq
 
 instance Show Prefix where
+    show NoPrefix = "*"
     show (StringPrefix p) = p
     show (MaskPrefix p) = show p
 
