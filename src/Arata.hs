@@ -79,5 +79,13 @@ handleMessage _ = return ()
 
 burst :: Arata ()
 burst = do
-    protoIntroduceClient $ Client 1 "ChanServ" 1 "ChanServ" "Channel Services"  "Sio" vHost' "127.0.0.1" "127.0.0.1" Nothing
-    protoIntroduceClient $ Client 2 "NickServ" 1 "NickServ" "Nickname Services" "Sio" vHost' "127.0.0.1" "127.0.0.1" Nothing
+    csNick <- getConfig "chanserv" "nick"
+    csUser <- getConfig "chanserv" "user"
+    csHost <- getConfig "chanserv" "host"
+    csName <- getConfig "chanserv" "name"
+    nsNick <- getConfig "nickserv" "nick"
+    nsUser <- getConfig "nickserv" "user"
+    nsHost <- getConfig "nickserv" "host"
+    nsName <- getConfig "nickserv" "name"
+    protoIntroduceClient $ Client 1 csNick 1 csUser csName "Sio" csHost "127.0.0.1" "127.0.0.1" Nothing
+    protoIntroduceClient $ Client 2 nsNick 1 nsUser nsName "Sio" nsHost "127.0.0.1" "127.0.0.1" Nothing

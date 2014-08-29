@@ -67,7 +67,7 @@ defaultEnv con = Env
 
 defaultCP :: ConfigParser
 defaultCP = case eitherCP of
-    Left e   -> error "defaultCP: something went wrong"
+    Left e   -> error (show e)
     Right cp -> cp
   where eitherCP = return emptyCP
             >>= add_section "info"
@@ -81,3 +81,13 @@ defaultCP = case eitherCP of
             >>= set "remote"    "port"          "6697"
             >>= set "remote"    "tls"           "enabled"
             >>= set "remote"    "password"      "password"
+            >>= add_section "chanserv"
+            >>= set "chanserv"  "nick"          "ChanServ"
+            >>= set "chanserv"  "user"          "ChanServ"
+            >>= set "chanserv"  "host"          "chanserv.services.int"
+            >>= set "chanserv"  "name"          "Channel Services"
+            >>= add_section "nickserv"
+            >>= set "nickserv"  "nick"          "NickServ"
+            >>= set "nickserv"  "user"          "NickServ"
+            >>= set "nickserv"  "host"          "nickserv.services.int"
+            >>= set "nickserv"  "name"          "Nickname Services"

@@ -11,3 +11,15 @@ host = 127.0.0.1
 port = 6697
 tls = enabled
 password = password
+
+[chanserv]
+nick = ChanServ
+user = ChanServ
+host = chanserv.services.int
+name: Channel Services
+
+[nickserv]
+nick = NickServ
+user = NickServ
+host = nickserv.services.int
+name: Nickname Services
