@@ -1,0 +1,13 @@
+[info]
+id = 0AR
+name = services.int
+description: Arata IRC Services
+
+[local]
+password = password
+
+[remote]
+host = 127.0.0.1
+port = 6697
+tls = enabled
+password = password
