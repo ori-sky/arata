@@ -16,6 +16,7 @@
 module Arata.Helper where
 
 import qualified Data.ByteString as BS
+import qualified Data.Map as M
 import Data.ByteString.Char8 (pack, unpack)
 import Data.ConfigFile.Monadic
 import Control.Monad.State
@@ -48,3 +49,9 @@ getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
 getConfig section option = do
     cp <- gets configParser
     return (getConfig' cp section option)
+
+getClient :: String -> Arata (Maybe Client)
+getClient uid = gets clients >>= return . M.lookup uid
+
+addClient :: Client -> Arata ()
+addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })

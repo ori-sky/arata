@@ -13,6 +13,8 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Arata.Protocol.Charybdis where
 
 import Data.Maybe (fromMaybe)
@@ -36,10 +38,8 @@ protoRegister = do
     send "CAPAB :ENCAP QS EX IE EUID SAVE TB"
     send ("SERVER " ++ name ++ " 1 :" ++ desc)
 
-type H = Client -> Client -> String -> String -> Arata ()
-
-protoIntroduceClient :: (Integral a, Show a) => a -> String -> String -> String -> String -> Maybe String -> Maybe H -> Arata Client
-protoIntroduceClient id' nick' user' name host' acc _ = do
+protoIntroduceClient :: (Integral a, Show a) => a -> String -> String -> String -> String -> Maybe String -> Maybe PrivmsgH -> Arata Client
+protoIntroduceClient id' nick' user' name host' acc f = do
     sid <- getConfig "info" "id"
     let uid' = protoGetUid sid id'
         client = Client
@@ -53,9 +53,11 @@ protoIntroduceClient id' nick' user' name host' acc _ = do
             , host      = "127.0.0.1"
             , ip        = "127.0.0.1"
             , account   = acc
+            , privmsgH  = f
             }
         line = printf ":%s EUID %s 1 1 +Sio %s %s 127.0.0.1 %s 127.0.0.1 %s :%s" sid nick' user' host' uid' (fromMaybe "*" acc) name
     send line
+    addClient client
     return client
 
 protoDisconnect :: String -> Arata ()
@@ -71,16 +73,32 @@ protoHandleMessage (Message _ _ "SERVER" _) = do
     ts <- liftIO (fmap round getPOSIXTime)
     send ("SVINFO 6 6 0 :" ++ show ts)
     gets burst >>= id
-protoHandleMessage m@(Message _ _ "PRIVMSG" (uid:_)) = do
-    sid <- getConfig "info" "id"
-    if uid == sid ++ "A00001" then handleCS m else return ()
+protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip':uid':host':acc:name:_)) = do
+    addClient client
+  where client = Client
+            { uid       = uid'
+            , nick      = nick'
+            , ts        = read ts'
+            , user      = user'
+            , realName  = name
+            , userModes = umodes
+            , vHost     = vHost'
+            , host      = host'
+            , ip        = ip'
+            , account   = if acc == "*" then Nothing else Just acc
+            , privmsgH  = Nothing
+            }
+protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "PRIVMSG" (dstUid:msg:_)) = do
+    Just src <- getClient srcUid
+    getClient dstUid >>= \case
+        Nothing  -> return ()
+        Just dst -> case privmsgH dst of
+            Nothing -> return ()
+            Just f  -> f src dst (words msg)
 protoHandleMessage _ = return ()
 
 protoPrivmsg :: Client -> Client -> String -> Arata ()
-protoPrivmsg src dst msg = send (show (uid src) ++ " PRIVMSG " ++ show (uid dst) ++ " :" ++ msg)
+protoPrivmsg src dst msg = send (':' : uid src ++ " PRIVMSG " ++ uid dst ++ " :" ++ msg)
 
-handleCS :: Message -> Arata ()
-handleCS (Message _ prefix _ (_:cmd:xs)) = do
-    sid <- getConfig "info" "id"
-    send (':' : sid ++ "A00001 NOTICE " ++ show (fromMaybe NoPrefix prefix) ++ " :Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands.")
-handleCS _ = return ()
+protoNotice :: Client -> Client -> String -> Arata ()
+protoNotice src dst msg = send (':' : uid src ++ " NOTICE " ++ uid dst ++ " :" ++ msg)

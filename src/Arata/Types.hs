@@ -15,6 +15,7 @@
 
 module Arata.Types where
 
+import qualified Data.Map as M
 import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Network.Connection (Connection)
@@ -41,6 +42,8 @@ data Hostmask = Hostmask
 
 instance Show Hostmask where show (Hostmask n u h) = n ++ '!' : u ++ '@' : h
 
+type PrivmsgH = Client -> Client -> [String] -> Arata ()
+
 data Client = Client
     { uid       :: String
     , nick      :: String
@@ -52,19 +55,23 @@ data Client = Client
     , host      :: String
     , ip        :: String
     , account   :: Maybe String
+    , privmsgH  :: Maybe PrivmsgH
     }
 
 data Env = Env
     { connection    :: Connection
     , configParser  :: ConfigParser
     , burst         :: Arata ()
+    , clients       :: M.Map String Client
     }
 type Arata = StateT Env IO
 
-defaultEnv :: Connection -> Env
-defaultEnv con = Env
-    { connection = con
+defaultEnv :: Connection -> Arata () -> Env
+defaultEnv con burst' = Env
+    { connection    = con
     , configParser  = defaultCP
+    , burst         = burst'
+    , clients       = M.empty
     }
 
 defaultCP :: ConfigParser

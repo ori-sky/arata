@@ -34,9 +34,9 @@ vHost' = "services.int"
 run :: IO ()
 run = forever $ do
     cp <- loadConfig' "arata.conf"
-    tryIOError $ bracket (connect cp) disconnect (f cp)
+    catchIOError (bracket (connect cp) disconnect (f cp)) print
     threadDelay 3000000
-  where f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con) { burst = burst' }
+  where f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con burst')
 
 connect :: ConfigParser -> IO Connection
 connect cp = do
@@ -77,12 +77,10 @@ burst' = do
     nsUser <- getConfig "nickserv" "user"
     nsHost <- getConfig "nickserv" "host"
     nsName <- getConfig "nickserv" "name"
-    --protoIntroduceClient csHandler $ Client (protoUid 1) csNick 1 csUser csName "Sio" csHost "127.0.0.1" "127.0.0.1" Nothing
-    --protoIntroduceClient (\_ _ _ _ -> return ()) $ Client (protoUid 2) nsNick 1 nsUser nsName "Sio" nsHost "127.0.0.1" "127.0.0.1" Nothing
     protoIntroduceClient 1 csNick csUser csName csHost Nothing (Just csHandler)
     protoIntroduceClient 2 nsNick nsUser nsName nsHost Nothing Nothing
     return ()
 
-csHandler :: Client -> Client -> String -> String -> Arata ()
-csHandler src dst "HELP" "" = protoPrivmsg dst src "Not implemented yet"
-csHandler src dst _ _ = protoPrivmsg dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."
+csHandler :: PrivmsgH
+csHandler src dst ("HELP":_) = protoNotice dst src "Not implemented yet"
+csHandler src dst _ = protoNotice dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."
