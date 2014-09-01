@@ -30,8 +30,6 @@ import Arata.Message
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-vHost' = "services.int"
-
 run :: IO ()
 run = forever $ do
     cp <- loadConfig' "arata.conf"
