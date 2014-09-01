@@ -70,13 +70,29 @@ burst' = do
     cs <- getSection "chanserv"
     ns <- getSection "nickserv"
     protoIntroduceClient 1 (cs "nick") (cs "user") (cs "name") (cs "host") Nothing (Just csHandler)
-    protoIntroduceClient 2 (ns "nick") (ns "user") (ns "name") (ns "host") Nothing Nothing
+    protoIntroduceClient 2 (ns "nick") (ns "user") (ns "name") (ns "host") Nothing (Just nsHandler)
     return ()
 
 csHandler :: PrivmsgH
 csHandler src dst (x:xs) = csHandler' src dst (map toUpper x : xs)
 csHandler src dst [] = csHandler' src dst []
 
+nsHandler :: PrivmsgH
+nsHandler src dst (x:xs) = nsHandler' src dst (map toUpper x : xs)
+nsHandler src dst [] = nsHandler' src dst []
+
 csHandler' :: PrivmsgH
-csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented yet"
-csHandler' src dst _ = protoNotice dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."
+csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented"
+csHandler' src dst _ = do
+    nick' <- getConfig "chanserv" "nick"
+    protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
+
+nsHandler' src dst ("REGISTER":pass:email:_)
+    | '@' `elem` email = protoNotice dst src "Not implemented"
+    | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
+nsHandler' src dst ("REGISTER":_) = do
+    protoNotice dst src "Not enough parameters for \x02REGISTER\x02."
+    protoNotice dst src "Syntax: \x02REGISTER <password> <email>\x02"
+nsHandler' src dst _ = do
+    nick' <- getConfig "nickserv" "nick"
+    protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
