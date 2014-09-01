@@ -17,6 +17,7 @@
 
 module Arata where
 
+import Data.Char (toUpper)
 import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Control.Exception (bracket)
@@ -68,18 +69,16 @@ handleMessage = protoHandleMessage
 
 burst' :: Arata ()
 burst' = do
-    csNick <- getConfig "chanserv" "nick"
-    csUser <- getConfig "chanserv" "user"
-    csHost <- getConfig "chanserv" "host"
-    csName <- getConfig "chanserv" "name"
-    nsNick <- getConfig "nickserv" "nick"
-    nsUser <- getConfig "nickserv" "user"
-    nsHost <- getConfig "nickserv" "host"
-    nsName <- getConfig "nickserv" "name"
-    protoIntroduceClient 1 csNick csUser csName csHost Nothing (Just csHandler)
-    protoIntroduceClient 2 nsNick nsUser nsName nsHost Nothing Nothing
+    cs <- getSection "chanserv"
+    ns <- getSection "nickserv"
+    protoIntroduceClient 1 (cs "nick") (cs "user") (cs "name") (cs "host") Nothing (Just csHandler)
+    protoIntroduceClient 2 (ns "nick") (ns "user") (ns "name") (ns "host") Nothing Nothing
     return ()
 
 csHandler :: PrivmsgH
-csHandler src dst ("HELP":_) = protoNotice dst src "Not implemented yet"
-csHandler src dst _ = protoNotice dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."
+csHandler src dst (x:xs) = csHandler' src dst (map toUpper x : xs)
+csHandler src dst [] = csHandler' src dst []
+
+csHandler' :: PrivmsgH
+csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented yet"
+csHandler' src dst _ = protoNotice dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."
