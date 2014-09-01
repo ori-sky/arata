@@ -41,6 +41,9 @@ recv = do
 setEnvConfigParser :: ConfigParser -> Arata ()
 setEnvConfigParser cp = modify (\env -> env { configParser = cp })
 
+setBurst :: Arata () -> Arata ()
+setBurst f = modify (\env -> env { burst = f })
+
 getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
 getConfig section option = do
     cp <- gets configParser

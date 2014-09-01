@@ -42,7 +42,7 @@ data Hostmask = Hostmask
 instance Show Hostmask where show (Hostmask n u h) = n ++ '!' : u ++ '@' : h
 
 data Client = Client
-    { uid       :: Integer
+    { uid       :: String
     , nick      :: String
     , ts        :: Int
     , user      :: String
@@ -57,6 +57,7 @@ data Client = Client
 data Env = Env
     { connection    :: Connection
     , configParser  :: ConfigParser
+    , burst         :: Arata ()
     }
 type Arata = StateT Env IO
 

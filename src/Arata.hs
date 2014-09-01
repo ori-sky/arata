@@ -18,7 +18,6 @@
 module Arata where
 
 import Data.ConfigFile.Monadic
-import Data.Time.Clock.POSIX
 import Control.Monad.State
 import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
@@ -37,7 +36,7 @@ run = forever $ do
     cp <- loadConfig' "arata.conf"
     tryIOError $ bracket (connect cp) disconnect (f cp)
     threadDelay 3000000
-  where f cp = evalStateT (setEnvConfigParser cp >> runLoop) . defaultEnv
+  where f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con) { burst = burst' }
 
 connect :: ConfigParser -> IO Connection
 connect cp = do
@@ -65,20 +64,11 @@ loop = forever $ recv >>= \case
     Nothing   -> return ()
 
 handleMessage :: Message -> Arata ()
-handleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = do
-    password <- getConfig "local" "password"
-    unless (pass == password) $ do
-        protoDisconnect "Invalid password"
-        fail "Invalid password"
-handleMessage (Message _ _ "SERVER" _) = do
-    ts <- liftIO (fmap round getPOSIXTime)
-    send ("SVINFO 6 6 0 :" ++ show ts)
-    burst
 handleMessage (Message _ _ "PING" (server1:_)) = send ("PONG :" ++ server1)
 handleMessage m = protoHandleMessage m
 
-burst :: Arata ()
-burst = do
+burst' :: Arata ()
+burst' = do
     csNick <- getConfig "chanserv" "nick"
     csUser <- getConfig "chanserv" "user"
     csHost <- getConfig "chanserv" "host"
@@ -87,5 +77,12 @@ burst = do
     nsUser <- getConfig "nickserv" "user"
     nsHost <- getConfig "nickserv" "host"
     nsName <- getConfig "nickserv" "name"
-    protoIntroduceClient $ Client 1 csNick 1 csUser csName "Sio" csHost "127.0.0.1" "127.0.0.1" Nothing
-    protoIntroduceClient $ Client 2 nsNick 1 nsUser nsName "Sio" nsHost "127.0.0.1" "127.0.0.1" Nothing
+    --protoIntroduceClient csHandler $ Client (protoUid 1) csNick 1 csUser csName "Sio" csHost "127.0.0.1" "127.0.0.1" Nothing
+    --protoIntroduceClient (\_ _ _ _ -> return ()) $ Client (protoUid 2) nsNick 1 nsUser nsName "Sio" nsHost "127.0.0.1" "127.0.0.1" Nothing
+    protoIntroduceClient 1 csNick csUser csName csHost Nothing (Just csHandler)
+    protoIntroduceClient 2 nsNick nsUser nsName nsHost Nothing Nothing
+    return ()
+
+csHandler :: Client -> Client -> String -> String -> Arata ()
+csHandler src dst "HELP" "" = protoPrivmsg dst src "Not implemented yet"
+csHandler src dst _ _ = protoPrivmsg dst src "Invalid command. Use \x02/msg ChanServ HELP\x02 for a list of valid commands."

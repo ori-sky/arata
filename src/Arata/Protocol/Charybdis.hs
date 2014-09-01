@@ -16,10 +16,15 @@
 module Arata.Protocol.Charybdis where
 
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock.POSIX
+import Control.Monad.State
 import Text.Printf
 import Arata.Types
 import Arata.TS6
 import Arata.Helper
+
+protoGetUid :: (Integral a, Show a) => String -> a -> String
+protoGetUid sid = (sid ++) . intToUid
 
 protoRegister :: Arata ()
 protoRegister = do
@@ -31,20 +36,48 @@ protoRegister = do
     send "CAPAB :ENCAP QS EX IE EUID SAVE TB"
     send ("SERVER " ++ name ++ " 1 :" ++ desc)
 
-protoIntroduceClient :: Client -> Arata ()
-protoIntroduceClient client = send line
-  where line = printf ":%s EUID %s 1 %u +%s %s %s %s %s %s %s :%s"
-            "0AR" (nick client) (ts client) (userModes client) (user client) (vHost client) (host client)
-            ("0AR" ++ intToUid (uid client)) (ip client) (fromMaybe "*" (account client)) (realName client)
+type H = Client -> Client -> String -> String -> Arata ()
+
+protoIntroduceClient :: (Integral a, Show a) => a -> String -> String -> String -> String -> Maybe String -> Maybe H -> Arata Client
+protoIntroduceClient id' nick' user' name host' acc _ = do
+    sid <- getConfig "info" "id"
+    let uid' = protoGetUid sid id'
+        client = Client
+            { uid       = uid'
+            , nick      = nick'
+            , ts        = 1
+            , user      = user'
+            , realName  = name
+            , userModes = "Sio"
+            , vHost     = host'
+            , host      = "127.0.0.1"
+            , ip        = "127.0.0.1"
+            , account   = acc
+            }
+        line = printf ":%s EUID %s 1 1 +Sio %s %s 127.0.0.1 %s 127.0.0.1 %s :%s" sid nick' user' host' uid' (fromMaybe "*" acc) name
+    send line
+    return client
 
 protoDisconnect :: String -> Arata ()
 protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
 
 protoHandleMessage :: Message -> Arata ()
+protoHandleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = do
+    password <- getConfig "local" "password"
+    unless (pass == password) $ do
+        protoDisconnect "Invalid password"
+        fail "Invalid password"
+protoHandleMessage (Message _ _ "SERVER" _) = do
+    ts <- liftIO (fmap round getPOSIXTime)
+    send ("SVINFO 6 6 0 :" ++ show ts)
+    gets burst >>= id
 protoHandleMessage m@(Message _ _ "PRIVMSG" (uid:_)) = do
     sid <- getConfig "info" "id"
     if uid == sid ++ "A00001" then handleCS m else return ()
 protoHandleMessage _ = return ()
+
+protoPrivmsg :: Client -> Client -> String -> Arata ()
+protoPrivmsg src dst msg = send (show (uid src) ++ " PRIVMSG " ++ show (uid dst) ++ " :" ++ msg)
 
 handleCS :: Message -> Arata ()
 handleCS (Message _ prefix _ (_:cmd:xs)) = do
