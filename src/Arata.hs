@@ -64,8 +64,7 @@ loop = forever $ recv >>= \case
     Nothing   -> return ()
 
 handleMessage :: Message -> Arata ()
-handleMessage (Message _ _ "PING" (server1:_)) = send ("PONG :" ++ server1)
-handleMessage m = protoHandleMessage m
+handleMessage = protoHandleMessage
 
 burst' :: Arata ()
 burst' = do

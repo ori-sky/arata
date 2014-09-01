@@ -64,6 +64,7 @@ protoDisconnect :: String -> Arata ()
 protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
 
 protoHandleMessage :: Message -> Arata ()
+protoHandleMessage (Message _ _ "PING" (server1:_)) = send ("PONG :" ++ server1)
 protoHandleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = do
     password <- getConfig "local" "password"
     unless (pass == password) $ do
