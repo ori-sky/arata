@@ -46,9 +46,12 @@ setBurst :: Arata () -> Arata ()
 setBurst f = modify (\env -> env { burst = f })
 
 getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
-getConfig section option = do
+getConfig section option = getSection section >>= return . ($ option)
+
+getSection :: Get_C a => SectionSpec -> Arata (OptionSpec -> a)
+getSection section = do
     cp <- gets configParser
-    return (getConfig' cp section option)
+    return (getConfig' cp section)
 
 getClient :: String -> Arata (Maybe Client)
 getClient uid = gets clients >>= return . M.lookup uid
