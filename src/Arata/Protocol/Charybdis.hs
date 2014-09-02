@@ -89,6 +89,9 @@ protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip
             , account   = if acc == "*" then Nothing else Just acc
             , privmsgH  = Nothing
             }
+protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "NICK" (newNick:newTs:_)) = do
+    Just src <- getClient srcUid
+    addClient src { nick = newNick, ts = read newTs }
 protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "PRIVMSG" (dstUid:msg:_)) = do
     Just src <- getClient srcUid
     getClient dstUid >>= \case

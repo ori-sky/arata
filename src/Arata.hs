@@ -93,13 +93,7 @@ csHandler' src dst _ = do
 
 nsHandler' :: PrivmsgH
 nsHandler' src dst ("REGISTER":pass:email:_)
-    | '@' `elem` email = do
-        accs <- queryDB (QueryAccountsByNick (nick src))
-        if Ix.null accs
-            then do
-                updateDB (AddAccount (Account 1 (nick src)))
-                protoNotice dst src "Done"
-            else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
+    | '@' `elem` email = nsRegister src dst pass email
     | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
 nsHandler' src dst ("REGISTER":_) = do
     protoNotice dst src "Not enough parameters for \x02REGISTER\x02."
@@ -107,3 +101,12 @@ nsHandler' src dst ("REGISTER":_) = do
 nsHandler' src dst _ = do
     nick' <- getConfig "nickserv" "nick"
     protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
+
+nsRegister :: Client -> Client -> String -> String -> Arata ()
+nsRegister src dst pass email = do
+    accs <- queryDB (QueryAccountsByNick (nick src))
+    if Ix.null accs
+        then do
+            updateDB (AddAccount (Account 1 (nick src)))
+            protoNotice dst src ('\x02' : nick src ++ "\x02 is now registered to \x02" ++ email ++ "\x02 with the password \x02" ++ pass ++ "\x02")
+        else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
