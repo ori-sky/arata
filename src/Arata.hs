@@ -19,6 +19,7 @@ module Arata where
 
 import Data.Char (toUpper)
 import Data.ConfigFile.Monadic
+import Data.Acid
 import Control.Monad.State
 import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
@@ -28,14 +29,16 @@ import Arata.Types
 import Arata.Config
 import Arata.Message
 import Arata.Helper
+import Arata.DB()
 import Arata.Protocol.Charybdis
 
 run :: IO ()
 run = forever $ do
     cp <- loadConfig' "arata.conf"
+    as <- openLocalStateFrom "db" defaultDBState
+    let f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con burst' as)
     catchIOError (bracket (connect cp) disconnect (f cp)) print
     threadDelay 3000000
-  where f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con burst')
 
 connect :: ConfigParser -> IO Connection
 connect cp = do

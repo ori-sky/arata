@@ -17,6 +17,7 @@ module Arata.Helper where
 
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
+import Data.Acid
 import Data.ByteString.Char8 (pack, unpack)
 import Data.ConfigFile.Monadic
 import Control.Monad.State
@@ -44,6 +45,9 @@ setEnvConfigParser cp = modify (\env -> env { configParser = cp })
 
 setBurst :: Arata () -> Arata ()
 setBurst f = modify (\env -> env { burst = f })
+
+setAcidState :: AcidState DBState -> Arata ()
+setAcidState as = modify (\env -> env { acidState = as })
 
 getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
 getConfig section option = getSection section >>= return . ($ option)

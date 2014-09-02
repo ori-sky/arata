@@ -13,9 +13,14 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Arata.Types where
 
+import Data.Typeable
 import qualified Data.Map as M
+import Data.IxSet
+import Data.Acid
 import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Network.Connection (Connection)
@@ -63,13 +68,15 @@ data Env = Env
     , configParser  :: ConfigParser
     , burst         :: Arata ()
     , clients       :: M.Map String Client
+    , acidState     :: AcidState DBState
     }
 type Arata = StateT Env IO
 
-defaultEnv :: Connection -> Arata () -> Env
-defaultEnv con burst' = Env
+defaultEnv :: Connection -> Arata () -> AcidState DBState -> Env
+defaultEnv con burst' as = Env
     { connection    = con
     , configParser  = defaultCP
+    , acidState     = as
     , burst         = burst'
     , clients       = M.empty
     }
@@ -100,3 +107,20 @@ defaultCP = case eitherCP of
             >>= set "nickserv"  "user"          "NickServ"
             >>= set "nickserv"  "host"          "nickserv.services.int"
             >>= set "nickserv"  "name"          "Nickname Services"
+
+data Account = Account
+    { accId     :: Int
+    , accName   :: String
+    } deriving (Eq, Ord, Typeable)
+
+instance Indexable Account where
+    empty = ixSet [ixFun ((: []) . accId), ixFun ((: []) . accName)]
+
+data DBState = DBState
+    { accounts :: IxSet Account
+    } deriving Typeable
+
+defaultDBState :: DBState
+defaultDBState = DBState
+    { accounts = empty
+    }
