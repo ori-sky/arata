@@ -19,6 +19,7 @@ module Arata where
 
 import Data.Char (toUpper)
 import Data.ConfigFile.Monadic
+import Data.IxSet as Ix
 import Data.Acid
 import Control.Monad.State
 import Control.Exception (bracket)
@@ -29,7 +30,7 @@ import Arata.Types
 import Arata.Config
 import Arata.Message
 import Arata.Helper
-import Arata.DB()
+import Arata.DB
 import Arata.Protocol.Charybdis
 
 run :: IO ()
@@ -90,8 +91,15 @@ csHandler' src dst _ = do
     nick' <- getConfig "chanserv" "nick"
     protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
 
+nsHandler' :: PrivmsgH
 nsHandler' src dst ("REGISTER":pass:email:_)
-    | '@' `elem` email = protoNotice dst src "Not implemented"
+    | '@' `elem` email = do
+        accs <- queryDB (QueryAccountsByNick (nick src))
+        if Ix.null accs
+            then do
+                updateDB (AddAccount (Account 1 (nick src)))
+                protoNotice dst src "Done"
+            else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
     | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
 nsHandler' src dst ("REGISTER":_) = do
     protoNotice dst src "Not enough parameters for \x02REGISTER\x02."
