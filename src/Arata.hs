@@ -34,12 +34,13 @@ import Arata.DB
 import Arata.Protocol.Charybdis
 
 run :: IO ()
-run = forever $ do
+run = do
     cp <- loadConfig' "arata.conf"
     as <- openLocalStateFrom "db" defaultDBState
     let f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con burst' as)
-    catchIOError (bracket (connect cp) disconnect (f cp)) print
-    threadDelay 3000000
+    forever $ do
+        catchIOError (bracket (connect cp) disconnect (f cp)) print
+        threadDelay 3000000
 
 connect :: ConfigParser -> IO Connection
 connect cp = do
