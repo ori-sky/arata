@@ -17,6 +17,7 @@
 
 module Arata where
 
+import Data.Maybe (isJust, fromJust)
 import Data.Char (toUpper)
 import Data.ConfigFile.Monadic
 import Data.IxSet as Ix
@@ -94,20 +95,25 @@ csHandler' src dst _ = do
 
 nsHandler' :: PrivmsgH
 nsHandler' src dst ("REGISTER":pass:email:_)
-    | '@' `elem` email = nsRegister src dst pass email
+    | '@' `elem` email = nsRegister src dst (Just pass) (Just email)
     | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
-nsHandler' src dst ("REGISTER":_) = do
-    protoNotice dst src "Not enough parameters for \x02REGISTER\x02."
-    protoNotice dst src "Syntax: \x02REGISTER <password> <email>\x02"
+nsHandler' src dst ("REGISTER":pass:[]) = nsRegister src dst (Just pass) Nothing
+nsHandler' src dst ("REGISTER":[]) = nsRegister src dst Nothing Nothing
 nsHandler' src dst _ = do
     nick' <- getConfig "nickserv" "nick"
     protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
 
-nsRegister :: Client -> Client -> String -> String -> Arata ()
+nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata ()
 nsRegister src dst pass email = do
     accs <- queryDB (QueryAccountsByNick (nick src))
     if Ix.null accs
         then do
-            updateDB (AddAccount (Account 1 (nick src)))
-            protoNotice dst src ('\x02' : nick src ++ "\x02 is now registered to \x02" ++ email ++ "\x02 with the password \x02" ++ pass ++ "\x02")
+            updateDB (AddAccount (Account 1 (nick src) [] []))
+            protoNotice dst src msg
         else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
+  where msgEmail = " to \x02" ++ (fromJust email) ++ "\x02"
+        msgPass = " with the password \x02" ++ (fromJust pass) ++ "\x02"
+        msg = '\x02' : nick src ++ "\x02 is now registered"
+            ++ (if isJust email then msgEmail else "")
+            ++ (if isJust pass then msgPass else "")
+            ++ "."

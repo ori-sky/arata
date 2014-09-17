@@ -13,17 +13,20 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Arata.Types where
 
 import Data.Typeable
+import Data.SafeCopy
 import qualified Data.Map as M
 import Data.IxSet
 import Data.Acid
 import Data.ConfigFile.Monadic
 import Control.Monad.State
 import Network.Connection (Connection)
+import Dated
 
 data Message = Message
     { tags      :: () -- TODO: support message tags
@@ -108,9 +111,19 @@ defaultCP = case eitherCP of
             >>= set "nickserv"  "host"          "nickserv.services.int"
             >>= set "nickserv"  "name"          "Nickname Services"
 
+data AuthMethod = PassAuth String
+                | CertAuth
+                deriving (Eq, Ord, Show)
+
+instance SafeCopy AuthMethod where
+    putCopy m = contain $ safePut m
+    getCopy = contain $ safeGet
+
 data Account = Account
     { accId     :: Int
     , accName   :: String
+    , emails    :: [Dated String]
+    , auths     :: [Dated AuthMethod]
     } deriving (Eq, Ord, Typeable)
 
 instance Indexable Account where
