@@ -26,16 +26,23 @@ import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets, modify)
 import Control.Monad.Reader (ask)
+import Dated
 import Arata.Types
 
 queryAccountsById :: Int -> Query DBState (IxSet Account)
-queryAccountsById id' = (@= id') . accounts <$> ask
+queryAccountsById x = (@= x) . accounts <$> ask
 
 queryAccountsByNick :: String -> Query DBState (IxSet Account)
-queryAccountsByNick id' = (@= id') . accounts <$> ask
+queryAccountsByNick x = (@= x) . accounts <$> ask
+
+queryAccountsByName :: String -> Query DBState (IxSet Account)
+queryAccountsByName x = (@= x) . accounts <$> ask
 
 addAccount :: Account -> Update DBState ()
 addAccount acc = modify (\s -> s { accounts = insert acc (accounts s) })
+
+updateAccount :: Account -> Update DBState ()
+updateAccount acc = modify (\s -> s { accounts = updateIx (accId acc) acc (accounts s) })
 
 queryDB q = do
     as <- gets acidState
@@ -45,6 +52,8 @@ updateDB u = do
     as <- gets acidState
     liftIO (update as u)
 
+$(deriveSafeCopy 0 'base ''Dated)
+$(deriveSafeCopy 0 'base ''AuthMethod)
 $(deriveSafeCopy 0 'base ''Account)
 $(deriveSafeCopy 0 'base ''DBState)
-$(makeAcidic ''DBState ['queryAccountsById, 'queryAccountsByNick, 'addAccount])
+$(makeAcidic ''DBState ['queryAccountsById, 'queryAccountsByNick, 'queryAccountsByName, 'addAccount, 'updateAccount])

@@ -15,13 +15,6 @@
 
 module Dated where
 
-import Data.Time.Clock (UTCTime(..))
-import Data.SafeCopy
+import Data.Time.Clock (UTCTime)
 
 data Dated a = a :@ UTCTime deriving (Eq, Ord)
-
-instance SafeCopy a => SafeCopy (Dated a) where
-    putCopy (x :@ t) = contain $ safePut (x, t)
-    getCopy = contain $ do
-        (x, t) <- safeGet
-        return (x :@ t)

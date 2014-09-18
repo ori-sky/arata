@@ -19,6 +19,7 @@ module Arata where
 
 import Data.Maybe (isJust, fromJust)
 import Data.Char (toUpper)
+import Data.Time.Clock
 import Data.ConfigFile.Monadic
 import Data.IxSet as Ix
 import Data.Acid
@@ -27,6 +28,7 @@ import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
 import System.IO.Error
 import Network.Connection
+import Dated
 import Arata.Types
 import Arata.Config
 import Arata.Message
@@ -95,36 +97,63 @@ csHandler' :: PrivmsgH
 csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented"
 csHandler' src dst _ = do
     nick' <- getConfig "chanserv" "nick"
-    protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
+    protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
 
 nsHandler' :: PrivmsgH
+nsHandler' src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src)
+nsHandler' src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src)
 nsHandler' src dst ("REGISTER":pass:email:_)
-    | '@' `elem` email = nsRegister src dst (Just pass) (Just email)
-    | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
-nsHandler' src dst ("REGISTER":pass:[]) = nsRegister src dst (Just pass) Nothing
-nsHandler' src dst ("REGISTER":[]) = nsRegister src dst Nothing Nothing
---nsHandler' src dst ("ADD":"PASSWORD":pass:_) = nsAddAuth src dst (PassAuth pass)
+    | '@' `elem` email = nsRegister src dst (Just pass) (Just email) >>= mapM_ (protoNotice dst src)
+    | otherwise = protoNotice dst src ('\2' : email ++ "\2 is not a valid email address.")
+nsHandler' src dst ["ADD"] = do
+    protoNotice dst src "Not enough parameters for \2ADD\2."
+    protoNotice dst src "Syntax: ADD <option> <parameters>"
+nsHandler' src dst ("ADD":x:xs) = nsAdd src dst (map toUpper x : xs)
 nsHandler' src dst _ = do
     nick' <- getConfig "nickserv" "nick"
-    protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
+    protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
+
+-- stage 3 handlers
+
+nsAdd :: PrivmsgH
+nsAdd src dst ("PASSWORD":pass:_) = do
+    (succeeded, notices) <- nsAddAuth src dst (PassAuth pass)
+    if succeeded
+        then protoNotice dst src ("The password \2" ++ pass ++ "\2 has been added to your account.")
+        else mapM_ (protoNotice dst src) notices
+nsAdd src dst ["PASSWORD"] = do
+    protoNotice dst src "Not enough parameters for \2ADD PASSWORD\2."
+    protoNotice dst src "Syntax: ADD PASSWORD <password>"
+nsAdd src dst _ = do
+    nick' <- getConfig "nickserv" "nick"
+    protoNotice dst src ("Invalid option for \2ADD\2. Use \2/msg " ++ nick' ++ " HELP ADD\2 for a list of valid options.")
 
 -- nickserv functions
 
-nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata ()
-nsRegister src dst pass email = do
-    accs <- queryDB (QueryAccountsByNick (nick src))
+nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata [String]
+nsRegister src _ pass email = do
+    accs <- queryDB $ QueryAccountsByNick (nick src)
     if Ix.null accs
         then do
-            updateDB (AddAccount (Account 1 (nick src) [] []))
-            protoNotice dst src msg
+            updateDB $ AddAccount (Account 1 (nick src) [] [])
             protoAuthClient src (Just (nick src))
-        else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
-  where msgEmail = " to \x02" ++ (fromJust email) ++ "\x02"
-        msgPass = " with the password \x02" ++ (fromJust pass) ++ "\x02"
-        msg = '\x02' : nick src ++ "\x02 is now registered"
+            return [msg]
+        else return ['\2' : nick src ++ "\2 is already registered."]
+  where msgEmail = " to \2" ++ (fromJust email) ++ "\2"
+        msgPass = " with the password \2" ++ (fromJust pass) ++ "\2"
+        msg = '\2' : nick src ++ "\2 is now registered"
             ++ (if isJust email then msgEmail else "")
             ++ (if isJust pass then msgPass else "")
             ++ "."
 
---nsAddAuth :: Client -> Client -> AuthMethod -> Arata ()
---nsAddAuth src dst auth =
+nsAddAuth :: Client -> Client -> AuthMethod -> Arata (Bool, [String])
+nsAddAuth src _ auth
+    | account src == Nothing = return (False, ["You are not logged in."])
+    | otherwise = do
+        accs <- queryDB $ QueryAccountsByName (fromJust (account src))
+        case getOne accs of
+            Nothing  -> fail "[FATAL] client account not found in database"
+            Just acc -> do
+                t <- liftIO getCurrentTime
+                updateDB $ UpdateAccount (acc { auths = (auth :@ t) : auths acc })
+                return (True, ["The authentication method has been added to your account."])

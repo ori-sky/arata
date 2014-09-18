@@ -19,7 +19,6 @@
 module Arata.Types where
 
 import Data.Typeable
-import Data.SafeCopy
 import qualified Data.Map as M
 import Data.IxSet
 import Data.Acid
@@ -114,10 +113,6 @@ defaultCP = case eitherCP of
 data AuthMethod = PassAuth String
                 | CertAuth
                 deriving (Eq, Ord, Show)
-
-instance SafeCopy AuthMethod where
-    putCopy m = contain $ safePut m
-    getCopy = contain $ safeGet
 
 data Account = Account
     { accId     :: Int
