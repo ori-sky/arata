@@ -79,6 +79,8 @@ burst' = do
     protoIntroduceClient 2 (ns "nick") (ns "user") (ns "name") (ns "host") Nothing (Just nsHandler)
     return ()
 
+-- stage 1 handlers
+
 csHandler :: PrivmsgH
 csHandler src dst (x:xs) = csHandler' src dst (map toUpper x : xs)
 csHandler src dst [] = csHandler' src dst []
@@ -86,6 +88,8 @@ csHandler src dst [] = csHandler' src dst []
 nsHandler :: PrivmsgH
 nsHandler src dst (x:xs) = nsHandler' src dst (map toUpper x : xs)
 nsHandler src dst [] = nsHandler' src dst []
+
+-- stage 2 handlers
 
 csHandler' :: PrivmsgH
 csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented"
@@ -99,9 +103,12 @@ nsHandler' src dst ("REGISTER":pass:email:_)
     | otherwise = protoNotice dst src ('\x02' : email ++ "\x02 is not a valid email address.")
 nsHandler' src dst ("REGISTER":pass:[]) = nsRegister src dst (Just pass) Nothing
 nsHandler' src dst ("REGISTER":[]) = nsRegister src dst Nothing Nothing
+--nsHandler' src dst ("ADD":"PASSWORD":pass:_) = nsAddAuth src dst (PassAuth pass)
 nsHandler' src dst _ = do
     nick' <- getConfig "nickserv" "nick"
     protoNotice dst src ("Invalid command. Use \x02/msg " ++ nick' ++ " HELP\x02 for a list of valid commands.")
+
+-- nickserv functions
 
 nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata ()
 nsRegister src dst pass email = do
@@ -110,6 +117,7 @@ nsRegister src dst pass email = do
         then do
             updateDB (AddAccount (Account 1 (nick src) [] []))
             protoNotice dst src msg
+            protoAuthClient src (Just (nick src))
         else protoNotice dst src ('\x02' : nick src ++ "\x02 is already registered.")
   where msgEmail = " to \x02" ++ (fromJust email) ++ "\x02"
         msgPass = " with the password \x02" ++ (fromJust pass) ++ "\x02"
@@ -117,3 +125,6 @@ nsRegister src dst pass email = do
             ++ (if isJust email then msgEmail else "")
             ++ (if isJust pass then msgPass else "")
             ++ "."
+
+--nsAddAuth :: Client -> Client -> AuthMethod -> Arata ()
+--nsAddAuth src dst auth =

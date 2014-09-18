@@ -60,6 +60,19 @@ protoIntroduceClient id' nick' user' name host' acc f = do
     addClient client
     return client
 
+protoAuthClient :: Client -> Maybe String -> Arata ()
+protoAuthClient cli acc = do
+    addClient cli { account = acc }
+    sid <- getConfig "info" "id"
+    encap sid Nothing "SU" [uid cli, fromMaybe "*" acc]
+
+encap :: String -> Maybe String -> String -> [String] -> Arata ()
+encap src dst cmd params = send (':' : src ++ " ENCAP " ++ fromMaybe "*" dst ++ ' ' : cmd ++ paramString)
+  where paramString = case params of
+            []     -> ""
+            (x:[]) -> " :" ++ x
+            _      -> ' ' : unwords (init params) ++ " :" ++ last params
+
 protoDisconnect :: String -> Arata ()
 protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
 
