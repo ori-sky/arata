@@ -111,6 +111,8 @@ nsHandler' src dst ["LOGIN"] = nsLogin src dst Nothing Nothing >>= mapM_ (protoN
 nsHandler' src dst ["LOGIN", pass] = nsLogin src dst Nothing (Just pass) >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ("LOGIN":accName:pass:_) = nsLogin src dst (Just accName) (Just pass) >>= mapM_ (protoNotice dst src) . snd
 
+nsHandler' src dst ("LOGOUT":_) = nsLogout src dst >>= mapM_ (protoNotice dst src) . snd
+
 nsHandler' src dst ["ADD"] = do
     protoNotice dst src "Not enough parameters for \2ADD\2."
     protoNotice dst src "Syntax: ADD <option> <parameters>"
@@ -174,6 +176,13 @@ nsLogin src dst (Just accName) (Just pass)
             | otherwise = f xs
         f _ = False
 nsLogin _ _ _ _ = fail "Something went wrong"
+
+nsLogout :: Client -> Client -> Arata (Bool, [String])
+nsLogout src dst = case account src of
+    Nothing -> return (False, ["You are not logged in."])
+    Just accName -> do
+        protoAuthClient src Nothing
+        return (True, ["You have been logged out."])
 
 nsAddAuth :: Client -> Client -> AuthMethod -> Arata (Bool, [String])
 nsAddAuth src _ auth
