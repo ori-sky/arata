@@ -154,9 +154,26 @@ nsRegister src _ pass email = do
             ++ "."
 
 nsLogin :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
-nsLogin src dst Nothing Nothing            = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
-nsLogin src dst Nothing (Just pass)        = return (True, ["Well done you got the potentially correct password!"])
-nsLogin src dst (Just accName) (Just pass) = return (True, ["Well done you got the potentially correct password!"])
+nsLogin src dst Nothing Nothing
+    | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
+    | otherwise = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
+nsLogin src dst Nothing pass = nsLogin src dst (Just (nick src)) pass
+nsLogin src dst (Just accName) (Just pass)
+    | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
+    | otherwise = do
+        accs <- queryDB $ QueryAccountsByNick (nick src)
+        if Ix.null accs
+            then return (False, ['\2' : accName ++ "\2 is not registered."])
+            else if f (auths (fromJust (getOne accs)))
+                then do
+                    protoAuthClient src (Just accName)
+                    return (True, ["You are now logged in as \2" ++ accName ++ "\2."])
+                else return (False, ["Failed to login to \2" ++ accName ++ "\2."])
+  where f (PassAuth p :@ _ : xs)
+            | pass == p = True
+            | otherwise = f xs
+        f _ = False
+nsLogin _ _ _ _ = fail "Something went wrong"
 
 nsAddAuth :: Client -> Client -> AuthMethod -> Arata (Bool, [String])
 nsAddAuth src _ auth
