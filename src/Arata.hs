@@ -107,6 +107,8 @@ nsHandler' src dst ("REGISTER":pass:email:_)
     | '@' `elem` email = nsRegister src dst (Just pass) (Just email) >>= mapM_ (protoNotice dst src) . snd
     | otherwise = protoNotice dst src ('\2' : email ++ "\2 is not a valid email address.")
 
+nsHandler' src dst ("DROP":_) = nsDrop src dst >>= mapM_ (protoNotice dst src) . snd
+
 nsHandler' src dst ["LOGIN"] = nsLogin src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ["LOGIN", pass] = nsLogin src dst Nothing (Just pass) >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ("LOGIN":accName:pass:_) = nsLogin src dst (Just accName) (Just pass) >>= mapM_ (protoNotice dst src) . snd
@@ -155,12 +157,15 @@ nsRegister src _ pass email = do
             ++ (if isJust pass then msgPass else "")
             ++ "."
 
+nsDrop :: Client -> Client -> Arata (Bool, [String])
+nsDrop _ _ = return (False, ["This command is not implemented."])
+
 nsLogin :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
-nsLogin src dst Nothing Nothing
+nsLogin src _ Nothing Nothing
     | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
     | otherwise = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
 nsLogin src dst Nothing pass = nsLogin src dst (Just (nick src)) pass
-nsLogin src dst (Just accName) (Just pass)
+nsLogin src _ (Just accName) (Just pass)
     | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
     | otherwise = do
         accs <- queryDB $ QueryAccountsByNick (nick src)
@@ -178,9 +183,9 @@ nsLogin src dst (Just accName) (Just pass)
 nsLogin _ _ _ _ = fail "Something went wrong"
 
 nsLogout :: Client -> Client -> Arata (Bool, [String])
-nsLogout src dst = case account src of
+nsLogout src _ = case account src of
     Nothing -> return (False, ["You are not logged in."])
-    Just accName -> do
+    Just _  -> do
         protoAuthClient src Nothing
         return (True, ["You have been logged out."])
 
