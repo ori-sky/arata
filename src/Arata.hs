@@ -100,15 +100,22 @@ csHandler' src dst _ = do
     protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
 
 nsHandler' :: PrivmsgH
-nsHandler' src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src)
-nsHandler' src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src)
+
+nsHandler' src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
+nsHandler' src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ("REGISTER":pass:email:_)
-    | '@' `elem` email = nsRegister src dst (Just pass) (Just email) >>= mapM_ (protoNotice dst src)
+    | '@' `elem` email = nsRegister src dst (Just pass) (Just email) >>= mapM_ (protoNotice dst src) . snd
     | otherwise = protoNotice dst src ('\2' : email ++ "\2 is not a valid email address.")
+
+nsHandler' src dst ["LOGIN"] = nsLogin src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
+nsHandler' src dst ["LOGIN", pass] = nsLogin src dst Nothing (Just pass) >>= mapM_ (protoNotice dst src) . snd
+nsHandler' src dst ("LOGIN":accName:pass:_) = nsLogin src dst (Just accName) (Just pass) >>= mapM_ (protoNotice dst src) . snd
+
 nsHandler' src dst ["ADD"] = do
     protoNotice dst src "Not enough parameters for \2ADD\2."
     protoNotice dst src "Syntax: ADD <option> <parameters>"
 nsHandler' src dst ("ADD":x:xs) = nsAdd src dst (map toUpper x : xs)
+
 nsHandler' src dst _ = do
     nick' <- getConfig "nickserv" "nick"
     protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
@@ -130,21 +137,26 @@ nsAdd src dst _ = do
 
 -- nickserv functions
 
-nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata [String]
+nsRegister :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
 nsRegister src _ pass email = do
     accs <- queryDB $ QueryAccountsByNick (nick src)
     if Ix.null accs
         then do
             updateDB $ AddAccount (Account 1 (nick src) [] [])
             protoAuthClient src (Just (nick src))
-            return [msg]
-        else return ['\2' : nick src ++ "\2 is already registered."]
+            return (True, [msg])
+        else return (False, ['\2' : nick src ++ "\2 is already registered."])
   where msgEmail = " to \2" ++ (fromJust email) ++ "\2"
         msgPass = " with the password \2" ++ (fromJust pass) ++ "\2"
         msg = '\2' : nick src ++ "\2 is now registered"
             ++ (if isJust email then msgEmail else "")
             ++ (if isJust pass then msgPass else "")
             ++ "."
+
+nsLogin :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
+nsLogin src dst Nothing Nothing            = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
+nsLogin src dst Nothing (Just pass)        = return (True, ["Well done you got the potentially correct password!"])
+nsLogin src dst (Just accName) (Just pass) = return (True, ["Well done you got the potentially correct password!"])
 
 nsAddAuth :: Client -> Client -> AuthMethod -> Arata (Bool, [String])
 nsAddAuth src _ auth
