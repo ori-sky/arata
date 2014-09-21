@@ -61,6 +61,7 @@ data Client = Client
     , vHost     :: String
     , host      :: String
     , ip        :: String
+    , cert      :: Maybe String
     , account   :: Maybe String
     , privmsgH  :: Maybe PrivmsgH
     }
@@ -111,7 +112,7 @@ defaultCP = case eitherCP of
             >>= set "nickserv"  "name"          "Nickname Services"
 
 data AuthMethod = PassAuth String
-                | CertAuth
+                | CertAuth String
                 deriving (Eq, Ord, Show)
 
 data Account = Account
@@ -119,7 +120,7 @@ data Account = Account
     , accName   :: String
     , emails    :: [Dated String]
     , auths     :: [Dated AuthMethod]
-    } deriving (Eq, Ord, Typeable)
+    } deriving (Eq, Ord, Typeable, Show)
 
 instance Indexable Account where
     empty = ixSet [ixFun ((: []) . accId), ixFun ((: []) . accName)]

@@ -17,7 +17,7 @@
 
 module Arata where
 
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe
 import Data.Char (toUpper)
 import Data.Time.Clock
 import Data.ConfigFile.Monadic
@@ -127,14 +127,23 @@ nsHandler' src dst _ = do
 -- stage 3 handlers
 
 nsAdd :: PrivmsgH
+nsAdd src dst ["PASSWORD"] = do
+    protoNotice dst src "Not enough parameters for \2ADD PASSWORD\2."
+    protoNotice dst src "Syntax: ADD PASSWORD <password>"
 nsAdd src dst ("PASSWORD":pass:_) = do
     (succeeded, notices) <- nsAddAuth src dst (PassAuth pass)
     if succeeded
         then protoNotice dst src ("The password \2" ++ pass ++ "\2 has been added to your account.")
         else mapM_ (protoNotice dst src) notices
-nsAdd src dst ["PASSWORD"] = do
-    protoNotice dst src "Not enough parameters for \2ADD PASSWORD\2."
-    protoNotice dst src "Syntax: ADD PASSWORD <password>"
+
+nsAdd src dst ("MYCERT":_) = case cert src of
+    Nothing -> protoNotice dst src "You are not connected with an SSL certificate."
+    Just cert' -> do
+        (succeeded, notices) <- nsAddAuth src dst (CertAuth cert')
+        if succeeded
+            then protoNotice dst src ("The SSL certificate \2" ++ cert' ++ "\2 has been added to your account.")
+            else mapM_ (protoNotice dst src) notices
+
 nsAdd src dst _ = do
     nick' <- getConfig "nickserv" "nick"
     protoNotice dst src ("Invalid option for \2ADD\2. Use \2/msg " ++ nick' ++ " HELP ADD\2 for a list of valid options.")
@@ -163,7 +172,21 @@ nsDrop _ _ = return (False, ["This command is not implemented."])
 nsLogin :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
 nsLogin src _ Nothing Nothing
     | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
-    | otherwise = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
+    | isNothing (cert src) = return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
+    | otherwise = do
+        accs <- queryDB $ QueryAccountsByNick (nick src)
+        if Ix.null accs
+            then return (False, ['\2' : nick src ++ "\2 is not registered."])
+            else if f (auths (fromJust (getOne accs)))
+                then do
+                    protoAuthClient src (Just (nick src))
+                    return (True, ["You are now logged in as \2" ++ nick src ++ "\2."])
+                else return (False, ["Failed to login to \2" ++ nick src ++ "\2."])
+  where f (CertAuth cert' :@ _ : xs)
+            | fromJust (cert src) == cert' = True
+            | otherwise = f xs
+        f [] = False
+        f (_:xs) = f xs
 nsLogin src dst Nothing pass = nsLogin src dst (Just (nick src)) pass
 nsLogin src _ (Just accName) (Just pass)
     | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
@@ -179,7 +202,8 @@ nsLogin src _ (Just accName) (Just pass)
   where f (PassAuth p :@ _ : xs)
             | pass == p = True
             | otherwise = f xs
-        f _ = False
+        f [] = False
+        f (_:xs) = f xs
 nsLogin _ _ _ _ = fail "Something went wrong"
 
 nsLogout :: Client -> Client -> Arata (Bool, [String])

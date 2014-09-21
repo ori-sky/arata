@@ -52,6 +52,7 @@ protoIntroduceClient id' nick' user' name host' acc f = do
             , vHost     = host'
             , host      = "127.0.0.1"
             , ip        = "127.0.0.1"
+            , cert      = Nothing
             , account   = acc
             , privmsgH  = f
             }
@@ -65,13 +66,6 @@ protoAuthClient cli acc = do
     addClient cli { account = acc }
     sid <- getConfig "info" "id"
     encap sid Nothing "SU" [uid cli, fromMaybe "*" acc]
-
-encap :: String -> Maybe String -> String -> [String] -> Arata ()
-encap src dst cmd params = send (':' : src ++ " ENCAP " ++ fromMaybe "*" dst ++ ' ' : cmd ++ paramString)
-  where paramString = case params of
-            []     -> ""
-            (x:[]) -> " :" ++ x
-            _      -> ' ' : unwords (init params) ++ " :" ++ last params
 
 protoDisconnect :: String -> Arata ()
 protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
@@ -99,9 +93,13 @@ protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip
             , vHost     = vHost'
             , host      = host'
             , ip        = ip'
+            , cert      = Nothing
             , account   = if acc == "*" then Nothing else Just acc
             , privmsgH  = Nothing
             }
+protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "ENCAP" (dst:cmd:params)) = do
+    Just src <- getClient srcUid
+    handleEncap src (if dst == "*" then Nothing else Just dst) cmd params
 protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "NICK" (newNick:newTs:_)) = do
     Just src <- getClient srcUid
     addClient src { nick = newNick, ts = read newTs }
@@ -119,3 +117,16 @@ protoPrivmsg src dst msg = send (':' : uid src ++ " PRIVMSG " ++ uid dst ++ " :"
 
 protoNotice :: Client -> Client -> String -> Arata ()
 protoNotice src dst msg = send (':' : uid src ++ " NOTICE " ++ uid dst ++ " :" ++ msg)
+
+-- TS6-specific functions
+
+handleEncap :: Client -> Maybe String -> String -> [String] -> Arata ()
+handleEncap src _ "CERTFP" [cert'] = addClient src { cert = Just cert' }
+handleEncap _ _ _ _ = return ()
+
+encap :: String -> Maybe String -> String -> [String] -> Arata ()
+encap src dst cmd params = send (':' : src ++ " ENCAP " ++ fromMaybe "*" dst ++ ' ' : cmd ++ paramString)
+  where paramString = case params of
+            []     -> ""
+            (x:[]) -> " :" ++ x
+            _      -> ' ' : unwords (init params) ++ " :" ++ last params
