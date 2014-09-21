@@ -29,6 +29,9 @@ import Control.Monad.Reader (ask)
 import Dated
 import Arata.Types
 
+queryAccounts :: Query DBState (IxSet Account)
+queryAccounts = accounts <$> ask
+
 queryAccountsById :: Int -> Query DBState (IxSet Account)
 queryAccountsById x = (@= x) . accounts <$> ask
 
@@ -56,4 +59,4 @@ $(deriveSafeCopy 0 'base ''Dated)
 $(deriveSafeCopy 0 'base ''AuthMethod)
 $(deriveSafeCopy 0 'base ''Account)
 $(deriveSafeCopy 0 'base ''DBState)
-$(makeAcidic ''DBState ['queryAccountsById, 'queryAccountsByNick, 'queryAccountsByName, 'addAccount, 'updateAccount])
+$(makeAcidic ''DBState ['queryAccounts, 'queryAccountsById, 'queryAccountsByNick, 'queryAccountsByName, 'addAccount, 'updateAccount])

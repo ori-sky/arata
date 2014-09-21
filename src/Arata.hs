@@ -155,7 +155,8 @@ nsRegister src _ pass email = do
     accs <- queryDB $ QueryAccountsByNick (nick src)
     if Ix.null accs
         then do
-            updateDB $ AddAccount (Account 1 (nick src) [] [])
+            accId' <- firstAvailableID
+            updateDB $ AddAccount (Account accId' (nick src) [] [])
             protoAuthClient src (Just (nick src))
             return (True, [msg])
         else return (False, ['\2' : nick src ++ "\2 is already registered."])

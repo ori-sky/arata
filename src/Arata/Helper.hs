@@ -17,6 +17,7 @@ module Arata.Helper where
 
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
+import qualified Data.IxSet as Ix
 import Data.Acid
 import Data.ByteString.Char8 (pack, unpack)
 import Data.ConfigFile.Monadic
@@ -24,6 +25,7 @@ import Control.Monad.State
 import Network.Connection
 import Arata.Types
 import Arata.Config
+import Arata.DB
 
 send :: String -> Arata ()
 send line = do
@@ -62,3 +64,11 @@ getClient uid = gets clients >>= return . M.lookup uid
 
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })
+
+firstAvailableID :: Arata Int
+firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAscList (Ix.Proxy :: Ix.Proxy Int)
+  where
+    f n (x:xs)
+        | n == x = f (succ n) xs
+        | otherwise = n
+    f n _ = n
