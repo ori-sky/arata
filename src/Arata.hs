@@ -104,8 +104,28 @@ nsHandler' :: PrivmsgH
 
 nsHandler' src dst ["HELP"] = do
     nick' <- getConfig "nickserv" "nick"
-    let msg = nick' ++ " allows users to register a nickname and prevents others from using that nick. " ++ nick' ++ " allows the owner of a nick to disconnect a user that is using their nick."
+    let msg = '\2' : nick' ++ "\2 allows users to register a nickname and prevents others from using that nick. \2" ++ nick' ++ "\2 allows the owner of a nick to disconnect a user that is using their nick."
     mapM_ (protoNotice dst src) (msg $:$ 60)
+    protoNotice dst src " "
+    protoNotice dst src "For more information about a command, type:"
+    protoNotice dst src ("    \2/msg " ++ nick' ++ " HELP <command>")
+    protoNotice dst src " "
+    protoNotice dst src "The following commands are available:"
+    protoNotice dst src "\2ADD\2        Adds a property to your account"
+    protoNotice dst src "\2CONFIRM\2    Confirms a previous command"
+    protoNotice dst src "\2DEL\2        Removes a property from your account"
+    protoNotice dst src "\2DROP\2       Drops your account"
+    protoNotice dst src "\2GROUP\2      Adds a nick to your account"
+    protoNotice dst src "\2HELP\2       Displays help information"
+    protoNotice dst src "\2INFO\2       Displays account information"
+    protoNotice dst src "\2LOGIN\2      Logs into an account"
+    protoNotice dst src "\2LOGOUT\2     Logs out of your account"
+    protoNotice dst src "\2NICK\2       Recovers a nick and changes your nick to it"
+    protoNotice dst src "\2RECOVER\2    Recovers a nick grouped to your account"
+    protoNotice dst src "\2REGISTER\2   Registers a new account"
+    protoNotice dst src "\2SHOW\2       Shows account properties"
+    protoNotice dst src "\2UNGROUP\2    Removes a nick from your account"
+    protoNotice dst src " "
 
 nsHandler' src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src) . snd
@@ -122,8 +142,10 @@ nsHandler' src dst ("LOGIN":accName:pass:_) = nsLogin src dst (Just accName) (Ju
 nsHandler' src dst ("LOGOUT":_) = nsLogout src dst >>= mapM_ (protoNotice dst src) . snd
 
 nsHandler' src dst ["ADD"] = do
+    nick' <- getConfig "nickserv" "nick"
     protoNotice dst src "Not enough parameters for \2ADD\2."
     protoNotice dst src "Syntax: ADD <option> <parameters>"
+    protoNotice dst src ("For more information, type \2/msg " ++ nick' ++ " HELP ADD")
 nsHandler' src dst ("ADD":x:xs) = nsAdd src dst (map toUpper x : xs)
 
 nsHandler' src dst _ = do
