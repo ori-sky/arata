@@ -20,4 +20,4 @@ import Data.Time.Clock (UTCTime)
 data Dated a = a :@ UTCTime deriving (Eq, Ord)
 
 instance Show a => Show (Dated a) where
-    show (x :@ _) = "Dated " ++ show x
+    show (x :@ _) = "Dated (" ++ show x ++ ")"
