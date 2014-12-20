@@ -28,6 +28,7 @@ import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
 import System.IO.Error
 import Network.Connection
+import Align
 import Dated
 import Arata.Types
 import Arata.Config
@@ -100,6 +101,11 @@ csHandler' src dst _ = do
     protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
 
 nsHandler' :: PrivmsgH
+
+nsHandler' src dst ["HELP"] = do
+    nick' <- getConfig "nickserv" "nick"
+    let msg = nick' ++ " allows users to register a nickname and prevents others from using that nick. " ++ nick' ++ " allows the owner of a nick to disconnect a user that is using their nick."
+    mapM_ (protoNotice dst src) (msg $:$ 60)
 
 nsHandler' src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
 nsHandler' src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src) . snd
