@@ -103,12 +103,10 @@ defaultCP = case eitherCP of
             >>= add_section "chanserv"
             >>= set "chanserv"  "nick"          "ChanServ"
             >>= set "chanserv"  "user"          "ChanServ"
-            >>= set "chanserv"  "host"          "chanserv.services.int"
             >>= set "chanserv"  "name"          "Channel Services"
             >>= add_section "nickserv"
             >>= set "nickserv"  "nick"          "NickServ"
             >>= set "nickserv"  "user"          "NickServ"
-            >>= set "nickserv"  "host"          "nickserv.services.int"
             >>= set "nickserv"  "name"          "Nickname Services"
 
 data AuthMethod = PassAuth String
@@ -132,4 +130,11 @@ data DBState = DBState
 defaultDBState :: DBState
 defaultDBState = DBState
     { accounts = empty
+    }
+
+data Serv = Serv
+    { servNick      :: String
+    , servUser      :: String
+    , servRealName  :: String
+    , servHandler   :: Maybe PrivmsgH
     }
