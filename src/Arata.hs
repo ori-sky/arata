@@ -1,4 +1,4 @@
-{- Copyright 2014 David Farrell <shokku.ra@gmail.com>
+{- Copyright 2014-2015 David Farrell <shokku.ra@gmail.com>
 
  - Licensed under the Apache License, Version 2.0 (the "License");
  - you may not use this file except in compliance with the License.
@@ -77,21 +77,9 @@ burst' = do
     cs <- CS.serv
     protoIntroduceClient 1 (servNick ns) (servUser ns) (servRealName ns) name Nothing (Just (handler (servHandler ns)))
     protoIntroduceClient 2 (servNick cs) (servUser cs) (servRealName cs) name Nothing (Just (handler (servHandler cs)))
-    --protoIntroduceClient 2 (ns "nick") (ns "user") (ns "name") (ns "host") Nothing (Just nsHandler)
-    --protoIntroduceClient 2 (cs "nick") (cs "user") (cs "name") name Nothing (Just csHandler)
     return ()
-
--- stage 1 handlers
 
 handler :: Maybe PrivmsgH -> PrivmsgH
 handler (Just h) src dst (x:xs) = h src dst (map toUpper x : xs)
 handler (Just h) src dst [] = h src dst []
 handler Nothing _ _ _ = return ()
-
--- stage 2 handlers
-
-csHandler' :: PrivmsgH
-csHandler' src dst ("HELP":_) = protoNotice dst src "Not implemented"
-csHandler' src dst _ = do
-    nick' <- getConfig "chanserv" "nick"
-    protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
