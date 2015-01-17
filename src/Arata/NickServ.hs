@@ -1,3 +1,18 @@
+{- Copyright 2015 David Farrell <shokku.ra@gmail.com>
+
+ - Licensed under the Apache License, Version 2.0 (the "License");
+ - you may not use this file except in compliance with the License.
+ - You may obtain a copy of the License at
+
+ - http://www.apache.org/licenses/LICENSE-2.0
+
+ - Unless required by applicable law or agreed to in writing, software
+ - distributed under the License is distributed on an "AS IS" BASIS,
+ - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ - See the License for the specific language governing permissions and
+ - limitations under the License.
+ -}
+
 module Arata.NickServ where
 
 import Data.Maybe
@@ -5,13 +20,13 @@ import Data.Char (toUpper)
 import Data.IxSet as Ix
 import Data.Time.Clock
 import Control.Monad.State (liftIO)
-import Align
 import Dated
 --import Arata.Types (Serv(..), servNick, servUser, servRealName, servHandler)
 import Arata.Types
 import Arata.Helper
 import Arata.DB
 import Arata.Protocol.Charybdis
+import qualified Arata.NickServ.Help as Help
 
 serv :: Arata Serv
 serv = do
@@ -25,8 +40,7 @@ serv = do
 
 handler :: PrivmsgH
 
-handler src dst ["HELP"] = nsHelp src dst ["HELP"]
-handler src dst ("HELP":x:xs) = nsHelp src dst (map toUpper x : xs)
+handler src dst ("HELP":xs) = Help.handler src dst xs
 
 handler src dst ["REGISTER"] = nsRegister src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
 handler src dst ["REGISTER", pass] = nsRegister src dst (Just pass) Nothing >>= mapM_ (protoNotice dst src) . snd
@@ -54,34 +68,6 @@ handler src dst _ = do
     protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
 
 -- stage 3 handlers
-
-nsHelp :: PrivmsgH
-nsHelp src dst ("HELP":_) = do
-    nick' <- getConfig "nickserv" "nick"
-    let msg = '\2' : nick' ++ "\2 allows users to register a nickname and prevents others from using that nick. \2" ++ nick' ++ "\2 allows the owner of a nick to disconnect a user that is using their nick."
-    mapM_ (protoNotice dst src) (msg $:$ 60)
-    protoNotice dst src " "
-    protoNotice dst src "For more information about a command, type:"
-    protoNotice dst src ("    \2/msg " ++ nick' ++ " HELP <command>")
-    protoNotice dst src " "
-    protoNotice dst src "The following commands are available:"
-    protoNotice dst src "\2ADD\2        Adds a property to your account"
-    protoNotice dst src "\2CONFIRM\2    Confirms a previous command"
-    protoNotice dst src "\2DEL\2        Removes a property from your account"
-    protoNotice dst src "\2DROP\2       Drops your account"
-    protoNotice dst src "\2GROUP\2      Adds a nick to your account"
-    protoNotice dst src "\2HELP\2       Displays help information"
-    protoNotice dst src "\2INFO\2       Displays account information"
-    protoNotice dst src "\2LOGIN\2      Logs into an account"
-    protoNotice dst src "\2LOGOUT\2     Logs out of your account"
-    protoNotice dst src "\2NICK\2       Recovers a nick and changes your nick to it"
-    protoNotice dst src "\2RECOVER\2    Recovers a nick grouped to your account"
-    protoNotice dst src "\2REGISTER\2   Registers a new account"
-    protoNotice dst src "\2SHOW\2       Shows account properties"
-    protoNotice dst src "\2UNGROUP\2    Removes a nick from your account"
-    protoNotice dst src " "
-nsHelp src dst (x:_) = protoNotice dst src ("No help information available for \2" ++ x ++ "\2.")
-nsHelp src dst [] = protoNotice dst src "No help information available."
 
 nsAdd :: PrivmsgH
 nsAdd src dst ["PASSWORD"] = do

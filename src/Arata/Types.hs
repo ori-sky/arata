@@ -50,6 +50,7 @@ data Hostmask = Hostmask
 instance Show Hostmask where show (Hostmask n u h) = n ++ '!' : u ++ '@' : h
 
 type PrivmsgH = Client -> Client -> [String] -> Arata ()
+type CommandH = Client -> Client -> [String] -> Arata ()
 
 data Client = Client
     { uid       :: String
