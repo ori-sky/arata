@@ -40,7 +40,7 @@ handler src dst xs = handler' src dst (map (map toUpper) xs)
 handler' :: CommandH
 handler' src dst ("HELP":_) = do
     nick' <- getConfig "nickserv" "nick"
-    mapM_ (protoNotice dst src) (long cmd$:$ 60)
+    mapM_ (protoNotice dst src) (long cmd $:$ 60)
     protoNotice dst src " "
     protoNotice dst src "For more information about a command, type:"
     protoNotice dst src ("    \2/msg " ++ nick' ++ " HELP <command>\2")
