@@ -17,7 +17,6 @@
 
 module Arata where
 
-import Data.Char (toUpper)
 import Data.ConfigFile.Monadic
 import Data.Acid
 import Control.Monad.State
@@ -32,6 +31,7 @@ import Arata.Helper
 import Arata.Protocol.Charybdis
 import qualified Arata.NickServ as NS
 import qualified Arata.ChanServ as CS
+import qualified Arata.NickServ.Help as NSHelp
 
 run :: IO ()
 run = do
@@ -71,15 +71,21 @@ handleMessage :: Message -> Arata ()
 handleMessage = protoHandleMessage
 
 burst' :: Arata ()
-burst' = do
-    name <- getConfig "info" "name"
-    ns <- NS.serv
-    cs <- CS.serv
-    protoIntroduceClient 1 (servNick ns) (servUser ns) (servRealName ns) name Nothing (Just (handler (servHandler ns)))
-    protoIntroduceClient 2 (servNick cs) (servUser cs) (servRealName cs) name Nothing (Just (handler (servHandler cs)))
-    return ()
+burst' = mapM_ handleExport (concat [NS.exports, CS.exports, NSHelp.exports])
 
-handler :: Maybe PrivmsgH -> PrivmsgH
-handler (Just h) src dst (x:xs) = h src dst (map toUpper x : xs)
-handler (Just h) src dst [] = h src dst []
-handler Nothing _ _ _ = return ()
+handleExport :: PluginExport -> Arata ()
+handleExport (ServExport s) = do
+    name <- getConfig "info" "name"
+    sect <- getSection s
+    uid <- gets nextUid
+    let nick = sect "nick"
+    protoIntroduceClient uid nick (sect "user") (sect "name") name Nothing (Just (handler s nick))
+    modify (\env -> env { nextUid = uid + 1 })
+handleExport (CommandExport s c) = addCommand s c
+
+handler :: String -> String -> PrivmsgH
+handler s nick src dst (x:xs) = do
+    getCommand s x >>= \case
+        Nothing  -> protoNotice dst src ("Invalid command. Use \2/msg " ++ nick ++ " HELP\2 for a list of valid commands.")
+        Just cmd -> commandH cmd src dst xs
+handler _ _ _ _ [] = return ()

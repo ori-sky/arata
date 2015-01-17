@@ -13,6 +13,8 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Arata.NickServ.Help where
 
 import Data.Char (toUpper)
@@ -23,24 +25,13 @@ import Arata.Types
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-plugin = [CommandExport "nickserv" cmdHelp]
+exports = [CommandExport "nickserv" cmdHelp]
 
 cmdHelp :: Command
 cmdHelp = (defaultCommand "HELP" handler)
     { short     = "Displays help information"
     , long      = "\2NICK\2 allows users to register a nickname and prevent others from using that nick. \2NICK\2 allows the owner of a nick to disconnect a user that is using their nick."
     }
-
-cmdAdd :: Command
-cmdAdd = defaultCommand "ADD" badHandler
-
-cmds :: M.Map String Command
-cmds = M.insert (name cmdAdd) cmdAdd $
-           M.insert (name cmdHelp) cmdHelp $
-           M.empty
-
-badHandler :: CommandH
-badHandler _ _ _ = return ()
 
 handler :: CommandH
 handler src dst [] = handler' src dst ["HELP"]
@@ -55,8 +46,11 @@ handler' src dst ("HELP":_) = do
     protoNotice dst src ("    \2/msg " ++ nick' ++ " HELP <command>\2")
     protoNotice dst src " "
     protoNotice dst src "The following commands are available:"
-    let n = maximum (map length (M.keys cmds))
-    forM_ (M.elems cmds) $ \cmd -> protoNotice dst src ('\2' : name cmd ++ '\2' : replicate (n + 3 - length (name cmd)) ' ' ++ short cmd)
+    getCommands "nickserv" >>= \case
+        Nothing   -> return ()
+        Just cmds -> do
+            forM_ (M.elems cmds) $ \cmd -> protoNotice dst src ('\2' : name cmd ++ '\2' : replicate (n + 3 - length (name cmd)) ' ' ++ short cmd)
+          where n = maximum (map length (M.keys cmds))
     --protoNotice dst src "\2ADD\2        Adds a property to your account"
     --protoNotice dst src "\2CONFIRM\2    Confirms a previous command"
     --protoNotice dst src "\2DEL\2        Removes a property from your account"

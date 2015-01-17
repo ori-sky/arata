@@ -71,7 +71,9 @@ data Env = Env
     , configParser  :: ConfigParser
     , burst         :: Arata ()
     , clients       :: M.Map String Client
+    , nextUid       :: Int
     , acidState     :: AcidState DBState
+    , servs         :: M.Map String Commands
     }
 type Arata = StateT Env IO
 
@@ -79,9 +81,11 @@ defaultEnv :: Connection -> Arata () -> AcidState DBState -> Env
 defaultEnv con burst' as = Env
     { connection    = con
     , configParser  = defaultCP
-    , acidState     = as
     , burst         = burst'
     , clients       = M.empty
+    , nextUid       = 1
+    , acidState     = as
+    , servs         = M.empty
     }
 
 defaultCP :: ConfigParser
@@ -150,6 +154,8 @@ data Command = Command
     , commandH  :: CommandH
     }
 
+type Commands = M.Map String Command
+
 defaultCommand :: String -> CommandH -> Command
 defaultCommand n h = Command
     { name      = n
@@ -161,4 +167,4 @@ defaultCommand n h = Command
 data PluginExport = ServExport String
                   | CommandExport String Command
 
-type Plugin = [PluginExport]
+type Exports = [PluginExport]

@@ -1,4 +1,4 @@
-{- Copyright 2014 David Farrell <shokku.ra@gmail.com>
+{- Copyright 2014-2015 David Farrell <shokku.ra@gmail.com>
 
  - Licensed under the Apache License, Version 2.0 (the "License");
  - you may not use this file except in compliance with the License.
@@ -13,8 +13,11 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Arata.Helper where
 
+import Data.Char (toUpper)
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
 import qualified Data.IxSet as Ix
@@ -72,3 +75,18 @@ firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAsc
         | n == x = f (succ n) xs
         | otherwise = n
     f n _ = n
+
+getCommands :: String -> Arata (Maybe Commands)
+getCommands s = gets servs >>= return . M.lookup s
+
+getCommand :: String -> String -> Arata (Maybe Command)
+getCommand s c = getCommands s >>= return . \case
+    Nothing   -> Nothing
+    Just cmds -> M.lookup (map toUpper c) cmds
+
+addCommand :: String -> Command -> Arata ()
+addCommand s c = do
+    servs' <- gets servs
+    case M.lookup s servs' of
+        Nothing   -> modify (\env -> env { servs = M.insert s (M.singleton (name c) c) servs' })
+        Just cmds -> return ()
