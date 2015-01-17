@@ -28,6 +28,8 @@ import Arata.DB
 import Arata.Protocol.Charybdis
 import qualified Arata.NickServ.Help as Help
 
+plugin = [ServExport "nickserv"]
+
 serv :: Arata Serv
 serv = do
     ns <- getSection "nickserv"

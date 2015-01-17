@@ -50,7 +50,6 @@ data Hostmask = Hostmask
 instance Show Hostmask where show (Hostmask n u h) = n ++ '!' : u ++ '@' : h
 
 type PrivmsgH = Client -> Client -> [String] -> Arata ()
-type CommandH = Client -> Client -> [String] -> Arata ()
 
 data Client = Client
     { uid       :: String
@@ -139,3 +138,27 @@ data Serv = Serv
     , servRealName  :: String
     , servHandler   :: Maybe PrivmsgH
     }
+
+-- plugin API
+
+type CommandH = Client -> Client -> [String] -> Arata ()
+
+data Command = Command
+    { name      :: String
+    , short     :: String
+    , long      :: String
+    , commandH  :: CommandH
+    }
+
+defaultCommand :: String -> CommandH -> Command
+defaultCommand n h = Command
+    { name      = n
+    , short     = "Short command description"
+    , long      = "This is the long description of a command."
+    , commandH  = h
+    }
+
+data PluginExport = ServExport String
+                  | CommandExport String Command
+
+type Plugin = [PluginExport]

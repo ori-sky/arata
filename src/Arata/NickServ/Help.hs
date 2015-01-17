@@ -23,22 +23,7 @@ import Arata.Types
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-data Command = Command
-    { name      :: String
-    , short     :: String
-    , long      :: String
-    , commandH  :: CommandH
-    }
-
-defaultCommand :: String -> CommandH -> Command
-defaultCommand n h = Command
-    { name      = n
-    , short     = "Short command description"
-    , long      = "This is the long description of a command."
-    , commandH  = h
-    }
-
---plugin = [ServCommand "nickserv" cmdHelp]
+plugin = [CommandExport "nickserv" cmdHelp]
 
 cmdHelp :: Command
 cmdHelp = (defaultCommand "HELP" handler)
