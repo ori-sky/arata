@@ -13,8 +13,21 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ where
+module Arata.NickServ.Drop where
 
 import Arata.Types
+import Arata.Protocol.Charybdis
 
-exports = [ServExport "nickserv"]
+exports = [CommandExport "nickserv" cmd]
+
+cmd :: Command
+cmd = (defaultCommand "DROP" handler)
+    { short     = "Drops your account"
+    , long      = "TODO"
+    }
+
+handler :: CommandH
+handler src dst _ = nsDrop src dst >>= mapM_ (protoNotice dst src) . snd
+
+nsDrop :: Client -> Client -> Arata (Bool, [String])
+nsDrop _ _ = return (False, ["TODO"])

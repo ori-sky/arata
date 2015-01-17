@@ -89,4 +89,4 @@ addCommand s c = do
     servs' <- gets servs
     case M.lookup s servs' of
         Nothing   -> modify (\env -> env { servs = M.insert s (M.singleton (name c) c) servs' })
-        Just cmds -> return ()
+        Just cmds -> modify (\env -> env { servs = M.insert s (M.insert (name c) c cmds) servs' })

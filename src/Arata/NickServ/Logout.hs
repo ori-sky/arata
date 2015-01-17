@@ -13,8 +13,25 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ where
+module Arata.NickServ.Logout where
 
 import Arata.Types
+import Arata.Protocol.Charybdis
 
-exports = [ServExport "nickserv"]
+exports = [CommandExport "nickserv" cmd]
+
+cmd :: Command
+cmd = (defaultCommand "LOGOUT" handler)
+    { short     = "Logs out of your account"
+    , long      = "TODO"
+    }
+
+handler :: CommandH
+handler src dst _ = nsLogout src dst >>= mapM_ (protoNotice dst src) . snd
+
+nsLogout :: Client -> Client -> Arata (Bool, [String])
+nsLogout src _ = case account src of
+    Nothing -> return (False, ["You are not logged in."])
+    Just _  -> do
+        protoAuthClient src Nothing
+        return (True, ["You have been logged out."])

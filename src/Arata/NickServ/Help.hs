@@ -25,10 +25,10 @@ import Arata.Types
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-exports = [CommandExport "nickserv" cmdHelp]
+exports = [CommandExport "nickserv" cmd]
 
-cmdHelp :: Command
-cmdHelp = (defaultCommand "HELP" handler)
+cmd :: Command
+cmd = (defaultCommand "HELP" handler)
     { short     = "Displays help information"
     , long      = "\2NICK\2 allows users to register a nickname and prevent others from using that nick. \2NICK\2 allows the owner of a nick to disconnect a user that is using their nick."
     }
@@ -40,7 +40,7 @@ handler src dst xs = handler' src dst (map (map toUpper) xs)
 handler' :: CommandH
 handler' src dst ("HELP":_) = do
     nick' <- getConfig "nickserv" "nick"
-    mapM_ (protoNotice dst src) (long cmdHelp $:$ 60)
+    mapM_ (protoNotice dst src) (long cmd$:$ 60)
     protoNotice dst src " "
     protoNotice dst src "For more information about a command, type:"
     protoNotice dst src ("    \2/msg " ++ nick' ++ " HELP <command>\2")

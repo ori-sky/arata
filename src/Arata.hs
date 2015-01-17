@@ -31,7 +31,12 @@ import Arata.Helper
 import Arata.Protocol.Charybdis
 import qualified Arata.NickServ as NS
 import qualified Arata.ChanServ as CS
+import qualified Arata.NickServ.Add as NSAdd
+import qualified Arata.NickServ.Drop as NSDrop
 import qualified Arata.NickServ.Help as NSHelp
+import qualified Arata.NickServ.Login as NSLogin
+import qualified Arata.NickServ.Logout as NSLogout
+import qualified Arata.NickServ.Register as NSRegister
 
 run :: IO ()
 run = do
@@ -71,7 +76,7 @@ handleMessage :: Message -> Arata ()
 handleMessage = protoHandleMessage
 
 burst' :: Arata ()
-burst' = mapM_ handleExport (concat [NS.exports, CS.exports, NSHelp.exports])
+burst' = mapM_ handleExport (concat [NS.exports, CS.exports, NSHelp.exports, NSAdd.exports, NSDrop.exports, NSLogin.exports, NSLogout.exports, NSRegister.exports])
 
 handleExport :: PluginExport -> Arata ()
 handleExport (ServExport s) = do
