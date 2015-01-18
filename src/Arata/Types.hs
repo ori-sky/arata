@@ -147,22 +147,44 @@ data Serv = Serv
 
 type CommandH = Client -> Client -> [String] -> Arata ()
 
+data CommandArg = Required String | Optional String | Optionals String
+
 data Command = Command
-    { name      :: String
-    , short     :: String
-    , long      :: String
-    , commandH  :: CommandH
+    { name          :: String
+    , commandH      :: CommandH
+    , short         :: String
+    , long          :: String
+    , aboutSyntax   :: String
+    , aboutTopics   :: String
+    , aboutCommands :: String
+    , args          :: [CommandArg]
+    , subTopics     :: Arata Topics
+    , subCommands   :: [Command]
     }
 
 type Commands = M.Map String Command
 
 defaultCommand :: String -> CommandH -> Command
 defaultCommand n h = Command
-    { name      = n
-    , short     = "Short command description"
-    , long      = "This is the long description of a command."
-    , commandH  = h
+    { name          = n
+    , commandH      = h
+    , short         = "Short command description"
+    , long          = "This is the long description of a command."
+    , aboutSyntax   = "Syntax"
+    , aboutTopics   = "The following topics are available"
+    , aboutCommands = "The following sub-commands are available"
+    , args          = []
+    , subTopics     = return []
+    , subCommands   = []
     }
+
+data Topic = Topic
+    { topicName     :: String
+    , topicShort    :: String
+    , topicLong     :: String
+    }
+
+type Topics = [Topic]
 
 data PluginExport = ServExport String
                   | CommandExport String Command
