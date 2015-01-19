@@ -32,11 +32,19 @@ import Arata.Protocol.Charybdis
 import qualified Arata.NickServ as NS
 import qualified Arata.ChanServ as CS
 import qualified Arata.NickServ.Add as NSAdd
+import qualified Arata.NickServ.Confirm as NSConfirm
+import qualified Arata.NickServ.Del as NSDel
 import qualified Arata.NickServ.Drop as NSDrop
+import qualified Arata.NickServ.Group as NSGroup
 import qualified Arata.NickServ.Help as NSHelp
+import qualified Arata.NickServ.Info as NSInfo
 import qualified Arata.NickServ.Login as NSLogin
 import qualified Arata.NickServ.Logout as NSLogout
+import qualified Arata.NickServ.Nick as NSNick
+import qualified Arata.NickServ.Recover as NSRecover
 import qualified Arata.NickServ.Register as NSRegister
+import qualified Arata.NickServ.Show as NSShow
+import qualified Arata.NickServ.Ungroup as NSUngroup
 
 run :: IO ()
 run = do
@@ -75,8 +83,25 @@ loop = forever $ recv >>= \case
 handleMessage :: Message -> Arata ()
 handleMessage = protoHandleMessage
 
+exports = concat [ NS.exports, CS.exports
+                 , NSAdd.exports
+                 , NSConfirm.exports
+                 , NSDel.exports
+                 , NSDrop.exports
+                 , NSGroup.exports
+                 , NSHelp.exports
+                 , NSInfo.exports
+                 , NSLogin.exports
+                 , NSLogout.exports
+                 , NSNick.exports
+                 , NSRecover.exports
+                 , NSRegister.exports
+                 , NSShow.exports
+                 , NSUngroup.exports
+                 ]
+
 burst' :: Arata ()
-burst' = mapM_ handleExport (concat [NS.exports, CS.exports, NSHelp.exports, NSAdd.exports, NSDrop.exports, NSLogin.exports, NSLogout.exports, NSRegister.exports])
+burst' = mapM_ handleExport exports
 
 handleExport :: PluginExport -> Arata ()
 handleExport (ServExport s) = do

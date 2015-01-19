@@ -34,7 +34,6 @@ cmd = (defaultCommand "HELP" handler)
     , aboutSyntax   = "For more information on a topic, type"
     , args          = [Optional "topic", Optionals "subtopic"]
     , subTopics     = mkSubTopics
-    , subCommands   = [cmd]
     }
 
 mkSubTopics :: Arata Topics
@@ -84,19 +83,3 @@ argToString :: CommandArg -> String
 argToString (Required s)  = '<' : s ++ ">"
 argToString (Optional s)  = '[' : s ++ "]"
 argToString (Optionals s) = '[' : s ++ " [...]]"
-
--- TODO
---protoNotice dst src "\2ADD\2        Adds a property to your account"
---protoNotice dst src "\2CONFIRM\2    Confirms a previous command"
---protoNotice dst src "\2DEL\2        Removes a property from your account"
---protoNotice dst src "\2DROP\2       Drops your account"
---protoNotice dst src "\2GROUP\2      Adds a nick to your account"
---protoNotice dst src "\2HELP\2       Displays help information"
---protoNotice dst src "\2INFO\2       Displays account information"
---protoNotice dst src "\2LOGIN\2      Logs into an account"
---protoNotice dst src "\2LOGOUT\2     Logs out of your account"
---protoNotice dst src "\2NICK\2       Recovers a nick and changes your nick to it"
---protoNotice dst src "\2RECOVER\2    Recovers a nick grouped to your account"
---protoNotice dst src "\2REGISTER\2   Registers a new account"
---protoNotice dst src "\2SHOW\2       Shows account properties"
---protoNotice dst src "\2UNGROUP\2    Removes a nick from your account"
