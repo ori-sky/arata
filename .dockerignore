@@ -1,0 +1,9 @@
+.*.swp
+.*.swo
+*.hi
+*.o
+*.exe
+arata
+arata.conf
+db
+.git
