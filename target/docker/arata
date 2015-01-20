@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Default to default gateway
+IP=$(/sbin/ip route | awk '/default/ { print $3 }')
+
+export ARATA_HOST=$IP
+
+if ! [ -z "$IRCD_PORT_6697_TCP_ADDR" ]; then
+	ARATA_HOST=$IRCD_PORT_6697_TCP_ADDR
+fi
+
+cd /arata
+
+sed "s/127.0.0.1/$ARATA_HOST/g" arata.conf.example > arata.conf
+
+./arata
