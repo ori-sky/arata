@@ -11,6 +11,6 @@ fi
 
 cd /arata
 
-sed s/127.0.0.1/"$ARATA_HOST"/g arata.conf.example > arata.conf
+sed "s/127.0.0.1/$ARATA_HOST/g" arata.conf.example > arata.conf
 
 ./arata
