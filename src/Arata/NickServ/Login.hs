@@ -22,7 +22,10 @@ import Arata.Types
 import Arata.DB
 import Arata.Protocol.Charybdis
 
-exports = [CommandExport "nickserv" cmd]
+exports = [ CommandExport "nickserv" cmd
+          , CommandExport "nickserv" (Alias "IDENTIFY" "LOGIN")
+          , CommandExport "nickserv" (Alias "ID" "LOGIN")
+          ]
 
 cmd :: Command
 cmd = (defaultCommand "LOGIN" handler)

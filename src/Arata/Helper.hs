@@ -80,13 +80,24 @@ getCommands :: String -> Arata (Maybe Commands)
 getCommands s = gets servs >>= return . M.lookup s
 
 getCommand :: String -> String -> Arata (Maybe Command)
-getCommand s c = getCommands s >>= return . \case
-    Nothing   -> Nothing
-    Just cmds -> M.lookup (map toUpper c) cmds
+getCommand = getCommand' 0
+
+getCommand' :: Int -> String -> String -> Arata (Maybe Command)
+getCommand' 5 _ _ = return Nothing
+getCommand' n servName c = getCommands servName >>= \case
+    Nothing   -> return Nothing
+    Just cmds -> case M.lookup (map toUpper c) cmds of
+        Nothing             -> return Nothing
+        Just (Alias _ real) -> getCommand' (n + 1) servName real
+        Just cmd            -> return (Just cmd)
 
 addCommand :: String -> Command -> Arata ()
-addCommand s c = do
+addCommand servName cmd@(Alias alias _) = addCommand' servName alias cmd
+addCommand servName cmd@(Command {})    = addCommand' servName (name cmd) cmd
+
+addCommand' :: String -> String -> Command -> Arata ()
+addCommand' servName cmdName cmd = do
     servs' <- gets servs
-    case M.lookup s servs' of
-        Nothing   -> modify (\env -> env { servs = M.insert s (M.singleton (name c) c) servs' })
-        Just cmds -> modify (\env -> env { servs = M.insert s (M.insert (name c) c cmds) servs' })
+    case M.lookup servName servs' of
+        Nothing   -> modify (\env -> env { servs = M.insert servName (M.singleton cmdName cmd) servs' })
+        Just cmds -> modify (\env -> env { servs = M.insert servName (M.insert cmdName cmd cmds) servs' })

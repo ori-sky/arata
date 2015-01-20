@@ -160,7 +160,7 @@ data Command = Command
     , args          :: [CommandArg]
     , subTopics     :: Arata Topics
     , subCommands   :: [Command]
-    }
+    }        | Alias String String
 
 type Commands = M.Map String Command
 

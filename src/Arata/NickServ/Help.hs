@@ -17,6 +17,7 @@
 
 module Arata.NickServ.Help where
 
+import Data.Maybe (mapMaybe)
 import Data.Char (toUpper)
 import qualified Data.Map as M
 import Control.Monad (forM_)
@@ -25,7 +26,9 @@ import Arata.Types
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-exports = [CommandExport "nickserv" cmd]
+exports = [ CommandExport "nickserv" cmd
+          , CommandExport "nickserv" (Alias "H" "HELP")
+          ]
 
 cmd :: Command
 cmd = (defaultCommand "HELP" handler)
@@ -39,7 +42,10 @@ cmd = (defaultCommand "HELP" handler)
 mkSubTopics :: Arata Topics
 mkSubTopics = getCommands "nickserv" >>= return . \case
     Nothing   -> []
-    Just cmds -> map (\cmd -> Topic (name cmd) (short cmd) (long cmd)) (M.elems cmds)
+    Just cmds -> mapMaybe f (M.elems cmds)
+  where f (Alias _ _)      = Nothing
+        f cmd@(Command {}) = Just (Topic (name cmd) (short cmd) (long cmd))
+    --Just cmds -> map (\cmd -> Topic (name cmd) (short cmd) (long cmd)) (M.elems cmds)
 
 handler :: CommandH
 handler src dst [] = handler' src dst ["HELP"]
