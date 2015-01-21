@@ -19,3 +19,7 @@ clean:
 	find src -name '*.o' -print0 | xargs -0 rm -fv
 	find src -name '*.hi' -print0 | xargs -0 rm -fv
 	rm -fv $(EXECUTABLE)
+
+.PHONY: register
+register:
+	true
