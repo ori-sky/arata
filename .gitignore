@@ -5,4 +5,5 @@
 *.exe
 arata
 arata.conf
+dist
 db

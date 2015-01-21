@@ -9,6 +9,11 @@ all: build
 build:
 	$(GHC) $(CFLAGS) src/Main -o $(EXECUTABLE)
 
+.PHONY: install
+install: build
+	mkdir -p dist
+	cp -v arata arata.conf.example dist/
+
 .PHONY: clean
 clean:
 	find src -name '*.o' -print0 | xargs -0 rm -fv
