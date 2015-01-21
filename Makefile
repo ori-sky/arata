@@ -22,4 +22,3 @@ clean:
 
 .PHONY: register
 register:
-	true
