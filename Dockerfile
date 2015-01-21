@@ -1,16 +1,12 @@
 FROM flitter/init
 
 RUN apt-get update &&\
-    apt-get install -y ghc cabal-install make
+    apt-get install -y make ghc cabal-install
 
-RUN cabal update &&\
-    cabal install cabal-install &&\
-    cabal install containers mtl ixset connection configfile acid-state
+RUN cabal update
+RUN cd /arata && cabal install
 
-ADD . /arata
-
-RUN cd /arata && make build
-
+ADD dist /arata
 ADD target/docker/arata /etc/service/arata/run
 
 CMD /sbin/my_init
