@@ -98,8 +98,9 @@ protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip
             , privmsgH  = Nothing
             }
 protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "ENCAP" (dst:cmd:params)) = do
-    Just src <- getClient srcUid
-    handleEncap src (if dst == "*" then Nothing else Just dst) cmd params
+    getClient srcUid >>= \case
+        Nothing  -> return ()
+        Just src -> handleEncap src (if dst == "*" then Nothing else Just dst) cmd params
 protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "NICK" (newNick:newTs:_)) = do
     Just src <- getClient srcUid
     addClient src { nick = newNick, ts = read newTs }
