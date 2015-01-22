@@ -1,5 +1,5 @@
 GHC=ghc
-CFLAGS=-W -O2 -isrc
+CFLAGS=-Wall -Werror -fno-warn-missing-signatures -fno-warn-unused-do-bind -O2 -isrc
 EXECUTABLE=arata
 
 .PHONY: all

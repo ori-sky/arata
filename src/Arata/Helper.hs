@@ -63,7 +63,7 @@ getSection section = do
     return (getConfig' cp section)
 
 getClient :: String -> Arata (Maybe Client)
-getClient uid = gets clients >>= return . M.lookup uid
+getClient uid' = gets clients >>= return . M.lookup uid'
 
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })

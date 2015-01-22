@@ -26,12 +26,12 @@ import Arata.Types
 import Arata.Helper
 import Arata.Protocol.Charybdis
 
-exports = [ CommandExport "nickserv" cmd
+exports = [ CommandExport "nickserv" cmdHelp
           , CommandExport "nickserv" (Alias "H" "HELP")
           ]
 
-cmd :: Command
-cmd = (defaultCommand "HELP" handler)
+cmdHelp :: Command
+cmdHelp = (defaultCommand "HELP" handler)
     { short         = "Displays help information"
     , long          = "\2NICK\2 allows users to register a nickname and prevent others from using that nick. \2NICK\2 allows the owner of a nick to disconnect a user that is using their nick."
     , aboutSyntax   = "For more information on a topic, type"
@@ -68,14 +68,14 @@ handler' src dst (x:_) = getCommand "nickserv" x >>= \case
             xs -> do
                 protoNotice dst src " "
                 mapM_ (protoNotice dst src) ((aboutTopics cmd ++ ":") $:$ 60)
-                forM_ xs $ \(Topic name short _) -> protoNotice dst src ('\2' : name ++ '\2' : replicate (n + 3 - length name) ' ' ++ short)
+                forM_ xs $ \(Topic name' short' _) -> protoNotice dst src ('\2' : name' ++ '\2' : replicate (n + 3 - length name') ' ' ++ short')
               where n = maximum (map (length . topicName) xs)
         case subCommands cmd of
             [] -> return ()
             xs -> do
                 protoNotice dst src " "
                 mapM_ (protoNotice dst src) ((aboutCommands cmd ++ ":") $:$ 60)
-                forM_ xs $ \cmd -> protoNotice dst src ('\2' : name cmd ++ '\2' : replicate (n + 3 - length (name cmd)) ' ' ++ short cmd)
+                forM_ xs $ \subCmd -> protoNotice dst src ('\2' : name subCmd ++ '\2' : replicate (n + 3 - length (name subCmd)) ' ' ++ short subCmd)
               where n = maximum (map (length . name) xs)
         protoNotice dst src " "
         protoNotice dst src "   End of HELP"

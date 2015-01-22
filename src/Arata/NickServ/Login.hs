@@ -36,7 +36,7 @@ cmd = (defaultCommand "LOGIN" handler)
 handler :: CommandH
 handler src dst [] = nsLogin src dst Nothing Nothing >>= mapM_ (protoNotice dst src) . snd
 handler src dst [pass] = nsLogin src dst Nothing (Just pass) >>= mapM_ (protoNotice dst src) . snd
-handler src dst (accName:pass:_) = nsLogin src dst (Just accName) (Just pass) >>= mapM_ (protoNotice dst src) . snd
+handler src dst (acc:pass:_) = nsLogin src dst (Just acc) (Just pass) >>= mapM_ (protoNotice dst src) . snd
 
 nsLogin :: Client -> Client -> Maybe String -> Maybe String -> Arata (Bool, [String])
 nsLogin src _ Nothing Nothing
@@ -57,17 +57,17 @@ nsLogin src _ Nothing Nothing
         f [] = False
         f (_:xs) = f xs
 nsLogin src dst Nothing pass = nsLogin src dst (Just (nick src)) pass
-nsLogin src _ (Just accName) (Just pass)
+nsLogin src _ (Just acc) (Just pass)
     | isJust (account src) = return (False, ["You are already logged in as \2" ++ fromJust (account src) ++ "\2."])
     | otherwise = do
         accs <- queryDB $ QueryAccountsByNick (nick src)
         if Ix.null accs
-            then return (False, ['\2' : accName ++ "\2 is not registered."])
+            then return (False, ['\2' : acc ++ "\2 is not registered."])
             else if f (auths (fromJust (getOne accs)))
                 then do
-                    protoAuthClient src (Just accName)
-                    return (True, ["You are now logged in as \2" ++ accName ++ "\2."])
-                else return (False, ["Failed to login to \2" ++ accName ++ "\2."])
+                    protoAuthClient src (Just acc)
+                    return (True, ["You are now logged in as \2" ++ acc ++ "\2."])
+                else return (False, ["Failed to login to \2" ++ acc ++ "\2."])
   where f (PassAuth p :@ _ : xs)
             | pass == p = True
             | otherwise = f xs

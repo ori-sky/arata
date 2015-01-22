@@ -26,12 +26,8 @@ cmd = (defaultCommand "LOGOUT" handler)
     , long      = "TODO"
     }
 
-handler :: CommandH
-handler src dst _ = nsLogout src dst >>= mapM_ (protoNotice dst src) . snd
-
-nsLogout :: Client -> Client -> Arata (Bool, [String])
-nsLogout src _ = case account src of
-    Nothing -> return (False, ["You are not logged in."])
+handler src dst _ = case account src of
+    Nothing -> protoNotice dst src "You are not logged in."
     Just _  -> do
         protoAuthClient src Nothing
-        return (True, ["You have been logged out."])
+        protoNotice dst src "You have been logged out."

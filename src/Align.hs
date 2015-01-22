@@ -26,12 +26,12 @@ reverseBreak f xs = (reverse before, reverse after)
   where (after, before) = break f (reverse xs)
 
 wrap :: Eq a => (a -> Bool) -> Int -> [a] -> [[a]]
-wrap pred n line
+wrap f n line
     | length line <= n = [line]
-    | any pred beforeN = before : wrap pred n (after ++ afterN)
-    | otherwise        = beforeN : wrap pred n afterN
+    | any f beforeN = before : wrap f n (after ++ afterN)
+    | otherwise        = beforeN : wrap f n afterN
   where (beforeN, afterN) = splitAt n line
-        (before, after)   = reverseBreak pred beforeN
+        (before, after)   = reverseBreak f beforeN
 
 ($:$) :: String -> Int -> [String]
 line $:$ n = wrap isSpace n line

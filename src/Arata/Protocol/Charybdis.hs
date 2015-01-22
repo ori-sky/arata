@@ -31,15 +31,15 @@ protoGetUid sid = (sid ++) . intToUid
 protoRegister :: Arata ()
 protoRegister = do
     sid <- getConfig "info" "id"
-    name <- getConfig "info" "name"
+    name' <- getConfig "info" "name"
     desc <- getConfig "info" "description"
     password <- getConfig "remote" "password"
     send ("PASS " ++ password ++ " TS 6 :" ++ sid)
     send "CAPAB :ENCAP QS EX IE EUID SAVE TB"
-    send ("SERVER " ++ name ++ " 1 :" ++ desc)
+    send ("SERVER " ++ name' ++ " 1 :" ++ desc)
 
 protoIntroduceClient :: (Integral a, Show a) => a -> String -> String -> String -> String -> Maybe String -> Maybe PrivmsgH -> Arata Client
-protoIntroduceClient id' nick' user' name host' acc f = do
+protoIntroduceClient id' nick' user' name' host' acc f = do
     sid <- getConfig "info" "id"
     let uid' = protoGetUid sid id'
         client = Client
@@ -47,7 +47,7 @@ protoIntroduceClient id' nick' user' name host' acc f = do
             , nick      = nick'
             , ts        = 1
             , user      = user'
-            , realName  = name
+            , realName  = name'
             , userModes = "Sio"
             , vHost     = host'
             , host      = "127.0.0.1"
@@ -56,19 +56,21 @@ protoIntroduceClient id' nick' user' name host' acc f = do
             , account   = acc
             , privmsgH  = f
             }
-        line = printf ":%s EUID %s 1 1 +Sio %s %s 127.0.0.1 %s 127.0.0.1 %s :%s" sid nick' user' host' uid' (fromMaybe "*" acc) name
+        line = printf ":%s EUID %s 1 1 +Sio %s %s 127.0.0.1 %s 127.0.0.1 %s :%s" sid nick' user' host' uid' (fromMaybe "*" acc) name'
     send line
     addClient client
     return client
 
 protoAuthClient :: Client -> Maybe String -> Arata ()
-protoAuthClient cli acc = do
-    addClient cli { account = acc }
+protoAuthClient src acc = do
+    addClient src { account = acc }
     sid <- getConfig "info" "id"
-    encap sid Nothing "SU" [uid cli, fromMaybe "*" acc]
+    encap sid Nothing "SU" [sourceUid src, fromMaybe "*" acc]
 
 protoDisconnect :: String -> Arata ()
-protoDisconnect reason = send ("SQUIT " ++ "0AR" ++ " :" ++ reason)
+protoDisconnect reason = do
+    sid <- getConfig "info" "id"
+    send ("SQUIT " ++ sid ++ " :" ++ reason)
 
 protoHandleMessage :: Message -> Arata ()
 protoHandleMessage (Message _ _ "PING" (server1:_)) = send ("PONG :" ++ server1)
@@ -78,17 +80,17 @@ protoHandleMessage (Message _ _ "PASS" (pass:"TS":"6":_)) = do
         protoDisconnect "Invalid password"
         fail "Invalid password"
 protoHandleMessage (Message _ _ "SERVER" _) = do
-    ts <- liftIO (fmap round getPOSIXTime)
-    send ("SVINFO 6 6 0 :" ++ show ts)
+    t <- liftIO (fmap round getPOSIXTime)
+    send ("SVINFO 6 6 0 :" ++ show (t :: Integer))
     gets burst >>= id
-protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip':uid':host':acc:name:_)) = do
+protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip':uid':host':acc:name':_)) = do
     addClient client
   where client = Client
             { uid       = uid'
             , nick      = nick'
             , ts        = read ts'
             , user      = user'
-            , realName  = name
+            , realName  = name'
             , userModes = umodes
             , vHost     = vHost'
             , host      = host'
@@ -97,10 +99,10 @@ protoHandleMessage (Message _ _ "EUID" (nick':_:ts':('+':umodes):user':vHost':ip
             , account   = if acc == "*" then Nothing else Just acc
             , privmsgH  = Nothing
             }
-protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "ENCAP" (dst:cmd:params)) = do
+protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "ENCAP" (dst:cmd:params')) = do
     getClient srcUid >>= \case
         Nothing  -> return ()
-        Just src -> handleEncap src (if dst == "*" then Nothing else Just dst) cmd params
+        Just src -> handleEncap src (if dst == "*" then Nothing else Just dst) cmd params'
 protoHandleMessage (Message _ (Just (StringPrefix srcUid)) "NICK" (newNick:newTs:_)) = do
     Just src <- getClient srcUid
     addClient src { nick = newNick, ts = read newTs }
@@ -126,8 +128,8 @@ handleEncap src _ "CERTFP" [cert'] = addClient src { cert = Just cert' }
 handleEncap _ _ _ _ = return ()
 
 encap :: String -> Maybe String -> String -> [String] -> Arata ()
-encap src dst cmd params = send (':' : src ++ " ENCAP " ++ fromMaybe "*" dst ++ ' ' : cmd ++ paramString)
-  where paramString = case params of
+encap src dst cmd params' = send (':' : src ++ " ENCAP " ++ fromMaybe "*" dst ++ ' ' : cmd ++ paramString)
+  where paramString = case params' of
             []     -> ""
             (x:[]) -> " :" ++ x
-            _      -> ' ' : unwords (init params) ++ " :" ++ last params
+            _      -> ' ' : unwords (init params') ++ " :" ++ last params'

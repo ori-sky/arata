@@ -48,21 +48,21 @@ import qualified Arata.NickServ.Ungroup as NSUngroup
 
 run :: IO ()
 run = do
-    cp <- loadConfig' "arata.conf"
+    cfg <- loadConfig' "arata.conf"
     as <- openLocalStateFrom "db" defaultDBState
-    let f cp con = evalStateT (setEnvConfigParser cp >> runLoop) (defaultEnv con burst' as)
+    let f con = evalStateT (setEnvConfigParser cfg >> runLoop) (defaultEnv con burst' as)
     forever $ do
-        catchIOError (bracket (connect cp) disconnect (f cp)) print
+        catchIOError (bracket (connect cfg) disconnect f) print
         threadDelay 3000000
 
 connect :: ConfigParser -> IO Connection
-connect cp = do
+connect config = do
     putStrLn ("Connecting to `" ++ host' ++ ':' : show port ++ "`")
     ctx <- initConnectionContext
     connectTo ctx (ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
-  where host' = getConfig' cp "remote" "host"
-        port  = getConfig' cp "remote" "port" :: Int
-        tls   = getConfig' cp "remote" "tls"  :: Bool
+  where host' = getConfig' config "remote" "host"
+        port  = getConfig' config "remote" "port" :: Int
+        tls   = getConfig' config "remote" "tls"  :: Bool
         tlsSettings = if tls then Just (TLSSettingsSimple True False False) else Nothing
 
 disconnect :: Connection -> IO ()
@@ -105,17 +105,17 @@ burst' = mapM_ handleExport exports
 
 handleExport :: PluginExport -> Arata ()
 handleExport (ServExport s) = do
-    name <- getConfig "info" "name"
+    name' <- getConfig "info" "name"
     sect <- getSection s
-    uid <- gets nextUid
-    let nick = sect "nick"
-    protoIntroduceClient uid nick (sect "user") (sect "name") name Nothing (Just (handler s nick))
-    modify (\env -> env { nextUid = uid + 1 })
+    uid' <- gets nextUid
+    let nick' = sect "nick"
+    protoIntroduceClient uid' nick' (sect "user") (sect "name") name' Nothing (Just (handler s nick'))
+    modify (\env -> env { nextUid = uid' + 1 })
 handleExport (CommandExport s c) = addCommand s c
 
 handler :: String -> String -> PrivmsgH
-handler s nick src dst (x:xs) = do
+handler s nick' src dst (x:xs) = do
     getCommand s x >>= \case
-        Nothing  -> protoNotice dst src ("Invalid command. Use \2/msg " ++ nick ++ " HELP\2 for a list of valid commands.")
+        Nothing  -> protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
         Just cmd -> commandH cmd src dst xs
 handler _ _ _ _ [] = return ()
