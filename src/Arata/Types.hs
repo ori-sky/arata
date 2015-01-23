@@ -13,8 +13,8 @@
  - limitations under the License.
  -}
 
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Arata.Types where
 
@@ -75,6 +75,7 @@ data Env = Env
     , acidState     :: AcidState DBState
     , servs         :: M.Map String Commands
     }
+
 type Arata = StateT Env IO
 
 defaultEnv :: Connection -> Arata () -> AcidState DBState -> Env
