@@ -65,7 +65,7 @@ protoAuthClient :: Client -> Maybe String -> Arata ()
 protoAuthClient src acc = do
     addClient src { account = acc }
     sid <- getConfig "info" "id"
-    encap sid Nothing "SU" [sourceUid src, fromMaybe "*" acc]
+    encap sid Nothing "SU" [uid src, fromMaybe "*" acc]
 
 protoDisconnect :: String -> Arata ()
 protoDisconnect reason = do
