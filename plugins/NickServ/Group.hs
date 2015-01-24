@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Show where
+module NickServ.Group where
 
 import Arata.Types
 import Arata.Protocol.Charybdis
@@ -21,8 +21,8 @@ import Arata.Protocol.Charybdis
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "SHOW" handler)
-    { short     = "Shows account properties"
+cmd = (defaultCommand "GROUP" handler)
+    { short     = "Adds your current nick to your account"
     , long      = "TODO"
     }
 

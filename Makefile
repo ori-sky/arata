@@ -1,5 +1,5 @@
 GHC=ghc
-CFLAGS=-Wall -Werror -fno-warn-missing-signatures -fno-warn-unused-do-bind -O2 -isrc
+CFLAGS=-Wall -Werror -fno-warn-missing-signatures -fno-warn-unused-do-bind -O2 -isrc -package ghc -package ghc-paths
 EXECUTABLE=arata
 
 .PHONY: all
@@ -19,6 +19,11 @@ clean:
 	find src -name '*.o' -print0 | xargs -0 rm -fv
 	find src -name '*.hi' -print0 | xargs -0 rm -fv
 	rm -fv $(EXECUTABLE)
+
+.PHONY: clean-plugins
+clean-plugins:
+	find plugins -name '*.o' -print0 | xargs -0 rm -fv
+	find plugins -name '*.hi' -print0 | xargs -0 rm -fv
 
 .PHONY: register
 register:

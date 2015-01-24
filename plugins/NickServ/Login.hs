@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Login where
+module NickServ.Login where
 
 import Data.Maybe
 import Data.IxSet as Ix

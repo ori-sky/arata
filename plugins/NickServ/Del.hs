@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Logout where
+module NickServ.Del where
 
 import Arata.Types
 import Arata.Protocol.Charybdis
@@ -21,13 +21,10 @@ import Arata.Protocol.Charybdis
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "LOGOUT" handler)
-    { short     = "Logs out of your account"
+cmd = (defaultCommand "DEL" handler)
+    { short     = "Removes a property from your account"
     , long      = "TODO"
     }
 
-handler src dst _ = case account src of
-    Nothing -> protoNotice dst src "You are not logged in."
-    Just _  -> do
-        protoAuthClient src Nothing
-        protoNotice dst src "You have been logged out."
+handler :: CommandH
+handler src dst _ = protoNotice dst src "TODO"

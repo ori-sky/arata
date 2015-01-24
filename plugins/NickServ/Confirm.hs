@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Del where
+module NickServ.Confirm where
 
 import Arata.Types
 import Arata.Protocol.Charybdis
@@ -21,8 +21,8 @@ import Arata.Protocol.Charybdis
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "DEL" handler)
-    { short     = "Removes a property from your account"
+cmd = (defaultCommand "CONFIRM" handler)
+    { short     = "Confirms a previous command"
     , long      = "TODO"
     }
 

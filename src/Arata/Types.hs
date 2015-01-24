@@ -189,5 +189,6 @@ type Topics = [Topic]
 
 data PluginExport = ServExport String
                   | CommandExport String Command
+                    deriving Typeable
 
 type Exports = [PluginExport]

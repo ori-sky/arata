@@ -13,18 +13,8 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Nick where
+module NickServ where
 
 import Arata.Types
-import Arata.Protocol.Charybdis
 
-exports = [CommandExport "nickserv" cmd]
-
-cmd :: Command
-cmd = (defaultCommand "NICK" handler)
-    { short     = "Recovers a nick and changes your current nick to it"
-    , long      = "TODO"
-    }
-
-handler :: CommandH
-handler src dst _ = protoNotice dst src "TODO"
+exports = [ServExport "nickserv"]

@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Ungroup where
+module NickServ.Ungroup where
 
 import Arata.Types
 import Arata.Protocol.Charybdis

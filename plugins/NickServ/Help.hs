@@ -15,7 +15,7 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module Arata.NickServ.Help where
+module NickServ.Help where
 
 import Data.Maybe (mapMaybe)
 import Data.Char (toUpper)

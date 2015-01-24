@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Confirm where
+module NickServ.Info where
 
 import Arata.Types
 import Arata.Protocol.Charybdis
@@ -21,8 +21,8 @@ import Arata.Protocol.Charybdis
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "CONFIRM" handler)
-    { short     = "Confirms a previous command"
+cmd = (defaultCommand "INFO" handler)
+    { short     = "Displays account information"
     , long      = "TODO"
     }
 

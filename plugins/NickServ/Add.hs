@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Add where
+module NickServ.Add where
 
 import Data.Maybe
 import Data.Char (toUpper)

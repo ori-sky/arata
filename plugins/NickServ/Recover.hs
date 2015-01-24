@@ -13,7 +13,7 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Info where
+module NickServ.Recover where
 
 import Arata.Types
 import Arata.Protocol.Charybdis
@@ -21,8 +21,8 @@ import Arata.Protocol.Charybdis
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "INFO" handler)
-    { short     = "Displays account information"
+cmd = (defaultCommand "RECOVER" handler)
+    { short     = "Recovers a nick grouped to your account"
     , long      = "TODO"
     }
 

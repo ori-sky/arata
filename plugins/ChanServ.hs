@@ -13,21 +13,24 @@
  - limitations under the License.
  -}
 
-module Arata.NickServ.Drop where
+module ChanServ where
 
+import Control.Monad.State (liftIO)
 import Arata.Types
-import Arata.Protocol.Charybdis
+import Arata.Helper
 
-exports = [CommandExport "nickserv" cmd]
+exports = [ServExport "chanserv"]
 
-cmd :: Command
-cmd = (defaultCommand "DROP" handler)
-    { short     = "Drops your account"
-    , long      = "TODO"
-    }
+serv :: Arata Serv
+serv = do
+    cs <- getSection "chanserv"
+    return $ Serv
+        { servNick      = cs "nick"
+        , servUser      = cs "user"
+        , servRealName  = cs "name"
+        , servHandler   = Just handler
+        }
 
-handler :: CommandH
-handler src dst _ = nsDrop src dst >>= mapM_ (protoNotice dst src) . snd
-
-nsDrop :: Client -> Client -> Arata (Bool, [String])
-nsDrop _ _ = return (False, ["TODO"])
+handler :: PrivmsgH
+handler _ _ (_:_) = liftIO (putStrLn "hello")
+handler _ _ [] = return ()
