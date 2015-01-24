@@ -13,6 +13,7 @@ build:
 install: build
 	mkdir -p dist
 	cp -v arata arata.conf.example dist/
+	cp -rfv plugins dist/
 
 .PHONY: clean
 clean:
