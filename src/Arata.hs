@@ -68,26 +68,10 @@ loop = forever $ recv >>= \case
 handleMessage :: Message -> Arata ()
 handleMessage = protoHandleMessage
 
-plugins = [ "NickServ"
-          , "ChanServ"
-          , "NickServ.Add"
-          , "NickServ.Confirm"
-          , "NickServ.Del"
-          , "NickServ.Drop"
-          , "NickServ.Group"
-          , "NickServ.Help"
-          , "NickServ.Info"
-          , "NickServ.Login"
-          , "NickServ.Logout"
-          , "NickServ.Nick"
-          , "NickServ.Recover"
-          , "NickServ.Register"
-          , "NickServ.Show"
-          , "NickServ.Ungroup"
-          ]
-
 burst' :: Arata ()
-burst' = liftIO (mapM f plugins) >>= mapM_ handleExport . concat
+burst' = do
+    plugins <- getConfig "info" "plugins"
+    liftIO (mapM f (words plugins)) >>= mapM_ handleExport . concat
   where f name' = do
             p <- load name'
             putStrLn ("loaded plugin `" ++ name' ++ "`")

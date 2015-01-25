@@ -98,6 +98,22 @@ defaultCP = case eitherCP of
             >>= set "info"      "id"            "0AR"
             >>= set "info"      "name"          "services.int"
             >>= set "info"      "description"   "Arata IRC Services"
+            >>= set "info"      "plugins"       "NickServ\
+                                               \ NickServ.Add\
+                                               \ NickServ.Confirm\
+                                               \ NickServ.Del\
+                                               \ NickServ.Drop\
+                                               \ NickServ.Group\
+                                               \ NickServ.Help\
+                                               \ NickServ.Info\
+                                               \ NickServ.Login\
+                                               \ NickServ.Logout\
+                                               \ NickServ.Nick\
+                                               \ NickServ.Recover\
+                                               \ NickServ.Register\
+                                               \ NickServ.Show\
+                                               \ NickServ.Ungroup\
+                                               \ ChanServ"
             >>= add_section "local"
             >>= set "local"     "password"      "password"
             >>= add_section "remote"
@@ -105,14 +121,14 @@ defaultCP = case eitherCP of
             >>= set "remote"    "port"          "6697"
             >>= set "remote"    "tls"           "enabled"
             >>= set "remote"    "password"      "password"
-            >>= add_section "chanserv"
-            >>= set "chanserv"  "nick"          "ChanServ"
-            >>= set "chanserv"  "user"          "ChanServ"
-            >>= set "chanserv"  "name"          "Channel Services"
             >>= add_section "nickserv"
             >>= set "nickserv"  "nick"          "NickServ"
             >>= set "nickserv"  "user"          "NickServ"
             >>= set "nickserv"  "name"          "Nickname Services"
+            >>= add_section "chanserv"
+            >>= set "chanserv"  "nick"          "ChanServ"
+            >>= set "chanserv"  "user"          "ChanServ"
+            >>= set "chanserv"  "name"          "Channel Services"
 
 data AuthMethod = PassAuth String
                 | CertAuth String
