@@ -1,30 +1,34 @@
-GHC=ghc
-CFLAGS=-Wall -Werror -fno-warn-missing-signatures -fno-warn-unused-do-bind -O2 -isrc -package ghc -package ghc-paths
-EXECUTABLE=arata
-
 .PHONY: all
-all: build
+all: install
+
+.PHONY: sandbox
+sandbox:
+	cabal sandbox init
+
+.PHONY: deps
+deps: sandbox
+	cabal install --only-dependencies
 
 .PHONY: build
-build:
-	$(GHC) $(CFLAGS) src/Main -o $(EXECUTABLE)
+build: deps
+	cabal build
 
 .PHONY: install
 install: build
-	mkdir -p dist
-	cp -v arata arata.conf.example dist/
-	cp -rfv plugins dist/
+	cp -v dist/build/arata/arata ./
+
+.PHONY: run
+run: install
+	cabal exec ./arata
 
 .PHONY: clean
 clean:
 	find src -name '*.o' -print0 | xargs -0 rm -fv
 	find src -name '*.hi' -print0 | xargs -0 rm -fv
-	rm -fv $(EXECUTABLE)
+	rm -rfv dist
+	rm -fv arata
 
 .PHONY: clean-plugins
 clean-plugins:
 	find plugins -name '*.o' -print0 | xargs -0 rm -fv
 	find plugins -name '*.hi' -print0 | xargs -0 rm -fv
-
-.PHONY: register
-register:
