@@ -4,7 +4,8 @@
 *.o
 *.exe
 arata
-arata.conf
 dist
 db
 .git
+.cabal-sandbox
+cabal.sandbox.conf

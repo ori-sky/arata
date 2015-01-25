@@ -11,6 +11,13 @@ fi
 
 cd /arata
 
-sed "s/127.0.0.1/$ARATA_HOST/g" arata.conf.example > arata.conf
+if ! [ -f arata.conf ]
+then
+	echo "Replacing conf"
+	echo "using $ARATA_HOST as IP over TLS"
+	sed "s/127.0.0.1/$ARATA_HOST/g" arata.conf.example > arata.conf
+else
+	echo "Using existing conf"
+fi
 
-./arata
+HOME=/root cabal exec arata
