@@ -153,13 +153,6 @@ defaultDBState = DBState
     { accounts = empty
     }
 
-data Serv = Serv
-    { servNick      :: String
-    , servUser      :: String
-    , servRealName  :: String
-    , servHandler   :: Maybe PrivmsgH
-    }
-
 -- plugin API
 
 type CommandH = Client -> Client -> [String] -> Arata ()

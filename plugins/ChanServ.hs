@@ -20,17 +20,3 @@ import Arata.Types
 import Arata.Helper
 
 exports = [ServExport "chanserv"]
-
-serv :: Arata Serv
-serv = do
-    cs <- getSection "chanserv"
-    return $ Serv
-        { servNick      = cs "nick"
-        , servUser      = cs "user"
-        , servRealName  = cs "name"
-        , servHandler   = Just handler
-        }
-
-handler :: PrivmsgH
-handler _ _ (_:_) = liftIO (putStrLn "hello")
-handler _ _ [] = return ()
