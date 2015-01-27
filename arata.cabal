@@ -20,8 +20,11 @@ source-repository head
 executable arata
   main-is:             Main.hs
   -- other-modules:       
-  other-extensions:    LambdaCase, TypeFamilies, DeriveDataTypeable, TemplateHaskell
-  ghc-options:         -Wall -O2
+  other-extensions:    LambdaCase,
+                       TypeFamilies,
+                       DeriveDataTypeable,
+                       TemplateHaskell
+  ghc-options:         -Wall -O2 -fno-warn-missing-signatures -fno-warn-unused-do-bind
   build-depends:       base         >= 4.6  && < 5,
                        ConfigFile   >= 1.1  && < 1.2,
                        acid-state   >= 0.12 && < 0.13,
