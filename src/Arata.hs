@@ -17,6 +17,8 @@
 
 module Arata where
 
+import Data.Maybe (fromMaybe)
+import Data.Time.Clock.POSIX
 import Data.ConfigFile.Monadic
 import Data.Acid
 import Control.Monad.State
@@ -28,17 +30,18 @@ import Arata.Types
 import Arata.Config
 import Arata.Message
 import Arata.Helper
-import Arata.Protocol.Charybdis
 import Arata.Plugin.Load
 
 run :: IO ()
 run = do
     cfg <- loadConfig' "arata.conf"
     as <- openLocalStateFrom "db" defaultDBState
-    let f con = evalStateT (setEnvConfigParser cfg >> runLoop) (defaultEnv con burst' as)
+    exports <- liftIO (mapM load' (words (getConfig' cfg "info" "plugins"))) >>= return . concat
+    let f con = evalStateT runLoop (defaultEnv con as) { configParser = cfg, pluginExports = exports }
     forever $ do
         catchIOError (bracket (connect cfg) disconnect f) print
         threadDelay 3000000
+  where load' n = putStrLn ("loading plugin `" ++ n ++ "`") >> load n
 
 connect :: ConfigParser -> IO Connection
 connect config = do
@@ -56,40 +59,86 @@ disconnect con = do
     connectionClose con
 
 runLoop :: Arata ()
-runLoop = protoRegister >> loop
+runLoop = do
+    exports <- gets pluginExports
+    mapM_ handleExport [export | export@(ProtocolExport {}) <- exports]
+    name' <- getConfig "info" "name"
+    desc <- getConfig "info" "description"
+    pass <- getConfig "remote" "password"
+    doAction (RegistrationAction name' desc (Just pass))
+    loop
 
 loop :: Arata ()
 loop = forever $ recv >>= \case
-    Just line -> do
-        liftIO $ putStrLn ("-> " ++ line)
-        handleMessage (parseMessage line)
     Nothing   -> return ()
+    Just line -> gets fromProtocol >>= ($ parseMessage line) >>= mapM handleEvent >>= mapM_ doAction . concat
 
-handleMessage :: Message -> Arata ()
-handleMessage = protoHandleMessage
+handleEvent :: Event -> Arata [Action]
+handleEvent event = do
+    liftIO (putStrLn ("-> " ++ show event))
+    handleEvent' event
 
-burst' :: Arata ()
-burst' = do
-    plugins <- getConfig "info" "plugins"
-    liftIO (mapM f (words plugins)) >>= mapM_ handleExport . concat
-  where f name' = do
-            p <- load name'
-            putStrLn ("loaded plugin `" ++ name' ++ "`")
-            return p
-
-handleExport :: PluginExport -> Arata ()
-handleExport (ServExport s) = do
-    name' <- getConfig "info" "name"
-    sect <- getSection s
-    uid' <- gets nextUid
-    let nick' = sect "nick"
-    protoIntroduceClient uid' nick' (sect "user") (sect "name") name' Nothing (Just (handler s nick'))
-    modify (\env -> env { nextUid = uid' + 1 })
-handleExport (CommandExport s c) = addCommand s c
-
-handler :: String -> String -> PrivmsgH
-handler s nick' src dst (x:xs) = do
-    getCommand s x >>= \case
-        Nothing  -> protoNotice dst src ("Invalid command. Use \2/msg " ++ nick' ++ " HELP\2 for a list of valid commands.")
+handleEvent' :: Event -> Arata [Action]
+handleEvent' (RegistrationEvent _) = burst
+handleEvent' (PingEvent str) = return [PongAction str]
+handleEvent' (IntroductionEvent uid' nick' user' name' ip' host' vHost' uModes acc mTs) = do
+    ts' <- liftIO (fmap round getPOSIXTime)
+    addClient Client
+        { uid       = uid'
+        , nick      = nick'
+        , ts        = fromMaybe ts' mTs
+        , user      = user'
+        , realName  = name'
+        , userModes = uModes
+        , vHost     = vHost'
+        , host      = host'
+        , ip        = ip'
+        , cert      = Nothing
+        , account   = acc
+        , privmsgH  = Nothing
+        }
+    return []
+handleEvent' (CertEvent src crt) = getClient src >>= \case
+    Nothing  -> fail "[FATAL] desynchronization"
+    Just cli -> addClient cli { cert = Just crt } >> return []
+handleEvent' (NickEvent src new mTs) = getClient src >>= \case
+    Nothing  -> fail "[FATAL] desynchronization"
+    Just cli -> do
+        ts' <- liftIO (fmap round getPOSIXTime)
+        addClient cli { nick = new, ts = fromMaybe ts' mTs } >> return []
+handleEvent' (PrivmsgEvent src dst msg) = case words msg of
+    []     -> return []
+    (x:xs) -> getCommand "nickserv" x >>= \case
+        Nothing  -> return [NoticeAction dst src ("Invalid command. Use \2/msg TODO HELP\2 for a list of valid commands.")]
         Just cmd -> commandH cmd src dst xs
-handler _ _ _ _ [] = return ()
+handleEvent' _ = return []
+
+doAction :: Action -> Arata ()
+doAction action = do
+    doAction' action
+    gets toProtocol >>= ($ action) >>= mapM_ (send . show)
+    liftIO (putStrLn ("<- " ++ show action))
+
+doAction' :: Action -> Arata ()
+doAction' (AuthAction src acc) = getClient src >>= \case
+    Nothing  -> fail "[FATAL] desynchronization"
+    Just cli -> addClient cli { account = acc }
+doAction' _ = return ()
+
+burst :: Arata [Action]
+burst = gets pluginExports >>= liftM concat . mapM handleExport
+
+handleExport :: PluginExport -> Arata [Action]
+handleExport (ProtocolExport from to mkUid) = do
+    setFromProtocol from
+    setToProtocol to
+    setMakeUid mkUid
+    return []
+handleExport (ServExport s) = do
+    serverName <- getConfig "info" "name"
+    sect <- getSection s
+    n <- gets nextUid
+    uid' <- gets makeUid >>= ($ n)
+    modify (\env -> env { nextUid = succ n })
+    return [IntroductionAction uid' (sect "nick") (sect "user") (sect "name") serverName Nothing 1]
+handleExport (CommandExport s c) = addCommand s c >> return []

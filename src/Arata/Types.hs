@@ -32,7 +32,13 @@ data Message = Message
     , prefix    :: Maybe Prefix
     , command   :: String
     , params    :: [String]
-    } deriving Show
+    }
+
+instance Show Message where
+    show (Message () maybePfx cmd args') = maybe "" (\pfx -> ':' : show pfx ++ " ") maybePfx ++ cmd ++ f args'
+      where f [] = ""
+            f [x] = ' ' : ':' : x
+            f (x:xs) = ' ' : x ++ f xs
 
 data Prefix = NoPrefix | StringPrefix String | MaskPrefix Hostmask deriving Eq
 
@@ -54,7 +60,7 @@ type PrivmsgH = Client -> Client -> [String] -> Arata ()
 data Client = Client
     { uid       :: String
     , nick      :: String
-    , ts        :: Int
+    , ts        :: Integer
     , user      :: String
     , realName  :: String
     , userModes :: [Char]
@@ -69,24 +75,30 @@ data Client = Client
 data Env = Env
     { connection    :: Connection
     , configParser  :: ConfigParser
-    , burst         :: Arata ()
-    , clients       :: M.Map String Client
-    , nextUid       :: Int
     , acidState     :: AcidState DBState
+    , pluginExports :: [PluginExport]
+    , fromProtocol  :: FromProtocol
+    , makeUid       :: MakeUid
+    , toProtocol    :: ToProtocol
     , servs         :: M.Map String Commands
+    , clients       :: M.Map String Client
+    , nextUid       :: Integer
     }
 
 type Arata = StateT Env IO
 
-defaultEnv :: Connection -> Arata () -> AcidState DBState -> Env
-defaultEnv con burst' as = Env
+defaultEnv :: Connection -> AcidState DBState -> Env
+defaultEnv con as = Env
     { connection    = con
     , configParser  = defaultCP
-    , burst         = burst'
+    , acidState     = as
+    , pluginExports = []
+    , fromProtocol  = const (return [])
+    , toProtocol    = const (return [])
+    , makeUid       = return . show
+    , servs         = M.empty
     , clients       = M.empty
     , nextUid       = 1
-    , acidState     = as
-    , servs         = M.empty
     }
 
 defaultCP :: ConfigParser
@@ -98,7 +110,8 @@ defaultCP = case eitherCP of
             >>= set "info"      "id"            "0AR"
             >>= set "info"      "name"          "services.int"
             >>= set "info"      "description"   "Arata IRC Services"
-            >>= set "info"      "plugins"       "NickServ\
+            >>= set "info"      "plugins"       "Protocol.Charybdis\
+                                               \ NickServ\
                                                \ NickServ.Add\
                                                \ NickServ.Confirm\
                                                \ NickServ.Del\
@@ -135,7 +148,7 @@ data AuthMethod = PassAuth String
                 deriving (Eq, Ord, Show)
 
 data Account = Account
-    { accId     :: Int
+    { accId     :: Integer
     , accName   :: String
     , emails    :: [Dated String]
     , auths     :: [Dated AuthMethod]
@@ -155,9 +168,34 @@ defaultDBState = DBState
 
 -- plugin API
 
-type CommandH = Client -> Client -> [String] -> Arata ()
+data PluginExport = ProtocolExport FromProtocol ToProtocol MakeUid
+                  | ServExport String
+                  | CommandExport String Command
+                    deriving Typeable
 
-data CommandArg = Required String | Optional String | Optionals String
+type Exports = [PluginExport]
+
+type FromProtocol = Message -> Arata [Event]
+type ToProtocol = Action -> Arata [Message]
+type MakeUid = Integer -> Arata String
+
+data Event = PassEvent String
+           | RegistrationEvent String
+           | PingEvent String
+           | IntroductionEvent String String String String String String String [Char] (Maybe String) (Maybe Integer)
+           | CertEvent String String
+           | NickEvent String String (Maybe Integer)
+           | PrivmsgEvent String String String
+             deriving Show
+
+data Action = RegistrationAction String String (Maybe String)
+            | QuitAction String String
+            | PongAction String
+            | IntroductionAction String String String String String (Maybe String) Integer
+            | AuthAction String (Maybe String)
+            | PrivmsgAction String String String
+            | NoticeAction String String String
+              deriving Show
 
 data Command = Command
     { name          :: String
@@ -172,6 +210,8 @@ data Command = Command
     , subCommands   :: [Command]
     }        | Alias String String
 
+data CommandArg = Required String | Optional String | Optionals String
+type CommandH = String -> String -> [String] -> Arata [Action]
 type Commands = M.Map String Command
 
 defaultCommand :: String -> CommandH -> Command
@@ -195,9 +235,3 @@ data Topic = Topic
     }
 
 type Topics = [Topic]
-
-data PluginExport = ServExport String
-                  | CommandExport String Command
-                    deriving Typeable
-
-type Exports = [PluginExport]

@@ -20,17 +20,14 @@ module NickServ.Help where
 import Data.Maybe (mapMaybe)
 import Data.Char (toUpper)
 import qualified Data.Map as M
-import Control.Monad (forM_)
 import Align
 import Arata.Types
 import Arata.Helper
-import Arata.Protocol.Charybdis
 
 exports = [ CommandExport "nickserv" cmdHelp
           , CommandExport "nickserv" (Alias "H" "HELP")
           ]
 
-cmdHelp :: Command
 cmdHelp = (defaultCommand "HELP" handler)
     { short         = "Displays help information"
     , long          = "\2NICK\2 allows users to register a nickname and prevent others from using that nick. \2NICK\2 allows the owner of a nick to disconnect a user that is using their nick."
@@ -45,41 +42,33 @@ mkSubTopics = getCommands "nickserv" >>= return . \case
     Just cmds -> mapMaybe f (M.elems cmds)
   where f (Alias _ _)      = Nothing
         f cmd@(Command {}) = Just (Topic (name cmd) (short cmd) (long cmd))
-    --Just cmds -> map (\cmd -> Topic (name cmd) (short cmd) (long cmd)) (M.elems cmds)
 
-handler :: CommandH
 handler src dst [] = handler' src dst ["HELP"]
 handler src dst xs = handler' src dst (map (map toUpper) xs)
 
 handler' :: CommandH
 handler' src dst (x:_) = getCommand "nickserv" x >>= \case
-    Nothing  -> protoNotice dst src ("No help information available for \2" ++ x ++ "\2.")
+    Nothing  -> return [NoticeAction dst src ("No help information available for \2" ++ x ++ "\2.")]
     Just cmd -> do
         nick' <- getConfig "nickserv" "nick"
-        mapM_ (protoNotice dst src) (long cmd $:$ 60)
-        protoNotice dst src " "
-        mapM_ (protoNotice dst src) ((aboutSyntax cmd ++ ":") $:$ 60)
-        protoNotice dst src $ "    \2/msg " ++ nick' ++ ' ' : name cmd ++ case argsToString (args cmd) of
-                Nothing -> ""
-                Just s  -> ' ' : s
-            ++ "\2"
-        subTopics cmd >>= \case
-            [] -> return ()
-            xs -> do
-                protoNotice dst src " "
-                mapM_ (protoNotice dst src) ((aboutTopics cmd ++ ":") $:$ 60)
-                forM_ xs $ \(Topic name' short' _) -> protoNotice dst src ('\2' : name' ++ '\2' : replicate (n + 3 - length name') ' ' ++ short')
-              where n = maximum (map (length . topicName) xs)
-        case subCommands cmd of
-            [] -> return ()
-            xs -> do
-                protoNotice dst src " "
-                mapM_ (protoNotice dst src) ((aboutCommands cmd ++ ":") $:$ 60)
-                forM_ xs $ \subCmd -> protoNotice dst src ('\2' : name subCmd ++ '\2' : replicate (n + 3 - length (name subCmd)) ' ' ++ short subCmd)
-              where n = maximum (map (length . name) xs)
-        protoNotice dst src " "
-        protoNotice dst src "   End of HELP"
-handler' src dst [] = protoNotice dst src "No help information available."
+        subTs <- subTopics cmd
+        let part1 = long cmd $:$ 60
+                 ++ " "
+                  : (aboutSyntax cmd ++ ":") $:$ 60
+                 ++ ("    \2/msg " ++ nick' ++ ' ' : name cmd ++ maybe "" (' ' :) (argsToString (args cmd)) ++ "\2")
+                  : []
+            n f xs = maximum (map (length . f) xs)
+            part2 = if null subTs
+                then []
+                else " " : (aboutTopics cmd ++ ":") $:$ 60
+                        ++ map (\(Topic name' short' _) -> ('\2' : name' ++ '\2' : replicate (n topicName subTs + 3 - length name') ' ' ++ short')) subTs
+            part3 = case subCommands cmd of
+                [] -> []
+                xs -> " " : (aboutCommands cmd ++ ":") $:$ 60
+                         ++ map (\subCmd -> ('\2' : name subCmd ++ '\2' : replicate (n name xs + 3 - length (name subCmd)) ' ' ++ short subCmd)) xs
+            part4 = [" ", "  End of HELP"]
+        return $ map (NoticeAction dst src) (part1 ++ part2 ++ part3 ++ part4)
+handler' src dst _ = return [NoticeAction dst src "No help information available."]
 
 argsToString :: [CommandArg] -> Maybe String
 argsToString [] = Nothing

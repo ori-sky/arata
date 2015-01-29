@@ -33,7 +33,7 @@ import Arata.Types
 queryAccounts :: Query DBState (IxSet Account)
 queryAccounts = accounts <$> ask
 
-queryAccountsById :: Int -> Query DBState (IxSet Account)
+queryAccountsById :: Integer -> Query DBState (IxSet Account)
 queryAccountsById x = (@= x) . accounts <$> ask
 
 queryAccountsByNick :: String -> Query DBState (IxSet Account)

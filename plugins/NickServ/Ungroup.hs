@@ -16,15 +16,12 @@
 module NickServ.Ungroup where
 
 import Arata.Types
-import Arata.Protocol.Charybdis
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd :: Command
 cmd = (defaultCommand "UNGROUP" handler)
     { short     = "Removes your current nick from your account"
     , long      = "TODO"
     }
 
-handler :: CommandH
-handler src dst _ = protoNotice dst src "TODO"
+handler src dst _ = return [NoticeAction dst src "TODO"]

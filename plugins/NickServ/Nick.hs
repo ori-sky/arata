@@ -16,15 +16,12 @@
 module NickServ.Nick where
 
 import Arata.Types
-import Arata.Protocol.Charybdis
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd :: Command
 cmd = (defaultCommand "NICK" handler)
     { short     = "Recovers a nick and changes your current nick to it"
     , long      = "TODO"
     }
 
-handler :: CommandH
-handler src dst _ = protoNotice dst src "TODO"
+handler src dst _ = return [NoticeAction dst src "TODO"]

@@ -32,7 +32,6 @@ import Arata.DB
 
 send :: String -> Arata ()
 send line = do
-    liftIO $ putStrLn ("<- " ++ line)
     con <- gets connection
     liftIO $ connectionPut con (pack (line ++ "\r\n"))
 
@@ -48,11 +47,17 @@ recv = do
 setEnvConfigParser :: ConfigParser -> Arata ()
 setEnvConfigParser cp = modify (\env -> env { configParser = cp })
 
-setBurst :: Arata () -> Arata ()
-setBurst f = modify (\env -> env { burst = f })
-
 setAcidState :: AcidState DBState -> Arata ()
 setAcidState as = modify (\env -> env { acidState = as })
+
+setFromProtocol :: FromProtocol -> Arata ()
+setFromProtocol from = modify (\env -> env { fromProtocol = from })
+
+setToProtocol :: ToProtocol -> Arata ()
+setToProtocol to = modify (\env -> env { toProtocol = to })
+
+setMakeUid :: MakeUid -> Arata ()
+setMakeUid mkUid = modify (\env -> env { makeUid = mkUid })
 
 getConfig :: Get_C a => SectionSpec -> OptionSpec -> Arata a
 getConfig section option = getSection section >>= return . ($ option)
@@ -68,8 +73,8 @@ getClient uid' = gets clients >>= return . M.lookup uid'
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })
 
-firstAvailableID :: Arata Int
-firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAscList (Ix.Proxy :: Ix.Proxy Int)
+firstAvailableID :: Arata Integer
+firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAscList (Ix.Proxy :: Ix.Proxy Integer)
   where
     f n (x:xs)
         | n == x = f (succ n) xs

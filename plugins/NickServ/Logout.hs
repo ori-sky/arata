@@ -13,10 +13,12 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module NickServ.Logout where
 
 import Arata.Types
-import Arata.Protocol.Charybdis
+import Arata.Helper (getClient)
 
 exports = [CommandExport "nickserv" cmd]
 
@@ -26,8 +28,7 @@ cmd = (defaultCommand "LOGOUT" handler)
     , long      = "TODO"
     }
 
-handler src dst _ = case account src of
-    Nothing -> protoNotice dst src "You are not logged in."
-    Just _  -> do
-        protoAuthClient src Nothing
-        protoNotice dst src "You have been logged out."
+handler src dst _ = getClient src >>= \case
+    Nothing -> fail "[FATAL] desynchronization"
+    Just (Client { account = Nothing }) -> return [NoticeAction dst src "You are not logged in."]
+    Just _ -> return [AuthAction src Nothing, NoticeAction dst src "You have been logged out."]
