@@ -5,9 +5,9 @@
 *.hi
 *.o
 *.exe
-cabal.sandbox.config
-.cabal-sandbox
-dist
-arata
-arata.conf
-db
+/cabal.sandbox.config
+/.cabal-sandbox
+/dist
+/arata
+/arata.conf
+/db
