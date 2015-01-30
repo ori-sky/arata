@@ -107,9 +107,11 @@ handleEvent' (NickEvent src new mTs) = getClient src >>= \case
         addClient cli { nick = new, ts = fromMaybe ts' mTs } >> return []
 handleEvent' (PrivmsgEvent src dst msg) = case words msg of
     []     -> return []
-    (x:xs) -> getCommand "nickserv" x >>= \case
-        Nothing  -> return [NoticeAction dst src ("Invalid command. Use \2/msg TODO HELP\2 for a list of valid commands.")]
-        Just cmd -> commandH cmd src dst xs
+    (x:xs) -> getServ dst >>= \case
+        Nothing  -> return []
+        Just srv -> getCommand srv x >>= \case
+            Nothing  -> return [NoticeAction dst src ("Invalid command. Use \2/msg TODO HELP\2 for a list of valid commands.")]
+            Just cmd -> commandH cmd src dst xs
 handleEvent' _ = return []
 
 doAction :: Action -> Arata ()
@@ -133,11 +135,12 @@ handleExport (ProtocolExport from to mkUid) = do
     setToProtocol to
     setMakeUid mkUid
     return []
-handleExport (ServExport s) = do
+handleExport (ServExport name') = do
     serverName <- getConfig "info" "name"
-    sect <- getSection s
+    sect <- getSection name'
     n <- gets nextUid
     uid' <- gets makeUid >>= ($ n)
     modify (\env -> env { nextUid = succ n })
+    addServ uid' name'
     return [IntroductionAction uid' (sect "nick") (sect "user") (sect "name") serverName Nothing 1]
-handleExport (CommandExport s c) = addCommand s c >> return []
+handleExport (CommandExport name' c) = addCommand name' c >> return []

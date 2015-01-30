@@ -81,8 +81,14 @@ firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAsc
         | otherwise = n
     f n _ = n
 
+getServ :: String -> Arata (Maybe String)
+getServ uid' = gets servs >>= return . M.lookup uid'
+
+addServ :: String -> String -> Arata ()
+addServ uid' name' = modify (\env -> env { servs = M.insert uid' name' (servs env) })
+
 getCommands :: String -> Arata (Maybe Commands)
-getCommands s = gets servs >>= return . M.lookup s
+getCommands s = gets servCommands >>= return . M.lookup s
 
 getCommand :: String -> String -> Arata (Maybe Command)
 getCommand = getCommand' 0
@@ -102,7 +108,7 @@ addCommand servName cmd@(Command {})    = addCommand' servName (name cmd) cmd
 
 addCommand' :: String -> String -> Command -> Arata ()
 addCommand' servName cmdName cmd = do
-    servs' <- gets servs
+    servs' <- gets servCommands
     case M.lookup servName servs' of
-        Nothing   -> modify (\env -> env { servs = M.insert servName (M.singleton cmdName cmd) servs' })
-        Just cmds -> modify (\env -> env { servs = M.insert servName (M.insert cmdName cmd cmds) servs' })
+        Nothing   -> modify (\env -> env { servCommands = M.insert servName (M.singleton cmdName cmd) servs' })
+        Just cmds -> modify (\env -> env { servCommands = M.insert servName (M.insert cmdName cmd cmds) servs' })

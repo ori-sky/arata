@@ -75,11 +75,12 @@ data Env = Env
     , acidState     :: AcidState DBState
     , pluginExports :: [PluginExport]
     , fromProtocol  :: FromProtocol
-    , makeUid       :: MakeUid
     , toProtocol    :: ToProtocol
-    , servs         :: M.Map String Commands
-    , clients       :: M.Map String Client
+    , makeUid       :: MakeUid
     , nextUid       :: Integer
+    , clients       :: M.Map String Client
+    , servs         :: M.Map String String
+    , servCommands  :: M.Map String Commands
     }
 
 type Arata = StateT Env IO
@@ -93,9 +94,10 @@ defaultEnv con as = Env
     , fromProtocol  = const (return [])
     , toProtocol    = const (return [])
     , makeUid       = return . show
-    , servs         = M.empty
-    , clients       = M.empty
     , nextUid       = 1
+    , clients       = M.empty
+    , servs         = M.empty
+    , servCommands  = M.empty
     }
 
 defaultCP :: ConfigParser
