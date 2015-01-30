@@ -27,10 +27,10 @@ import Arata.Helper (getConfig, getClientByNick)
 
 exports = [ProtocolExport from to mkUid]
 
-from (Message _ _ "PING" (server1:_)) = return [PingEvent server1]
-from (Message _ _ "PASS" (pass:"TS":"6":_)) = return [PassEvent pass]
-from (Message _ _ "SERVER" (name':"1":_)) = return [RegistrationEvent name']
-from (Message _ _ "EUID" (nick:_:ts:('+':uModes):user:vHost:ip:uid:host:acc:name:_)) = return [IntroductionEvent uid nick user name ip host vHost uModes mAcc (Just (read ts))]
+from (Message _ _ "PING"   (server1:_))       = return [PingEvent server1]
+from (Message _ _ "PASS"   (pass:"TS":"6":_)) = return [PassEvent pass]
+from (Message _ _ "SERVER" (name':"1":_))     = return [RegistrationEvent name']
+from (Message _ _ "EUID"   (nick:_:ts:('+':uModes):user:vHost:ip:uid:host:acc:name:_)) = return [IntroductionEvent uid nick user name ip host vHost uModes mAcc (Just (read ts))]
   where mAcc = if acc == "*" then Nothing else Just acc
 from (Message _ (Just (StringPrefix src)) "NICK" (newNick:newTs:_)) = return [NickEvent src newNick (Just (read newTs))]
 from (Message _ (Just (StringPrefix src)) "PRIVMSG" (dst:msg:_))
@@ -49,11 +49,11 @@ to (RegistrationAction name desc pass) = do
            , Message () Nothing "SERVER" [name, "1", desc]
            ]
 to (QuitAction sid reason) = return [Message () Nothing "SQUIT" [sid, reason]]
-to (PongAction str) = return [Message () Nothing "PONG" [str]]
+to (PongAction str)        = return [Message () Nothing "PONG" [str]]
 to (IntroductionAction uid nick user name host acc ts) = do
     sid <- getConfig "info" "id"
     return [Message () (Just (StringPrefix sid)) "EUID" [nick, "1", show ts, "+Sio", user, host, "127.0.0.1", uid, "127.0.0.1", fromMaybe "*" acc, name]]
-to (AuthAction uid acc) = encap Nothing "SU" [uid, fromMaybe "*" acc] >>= return . return -- return Message into [] and then into Arata
+to (AuthAction uid acc)        = encap Nothing "SU" [uid, fromMaybe "*" acc] >>= return . return -- return Message into [] and then into Arata
 to (PrivmsgAction src dst msg) = return [Message () (Just (StringPrefix src)) "PRIVMSG" [dst, msg]]
 to (NoticeAction src dst msg)  = return [Message () (Just (StringPrefix src)) "NOTICE" [dst, msg]]
 
