@@ -121,6 +121,19 @@ doAction action = do
     liftIO (putStrLn ("<- " ++ show action))
 
 doAction' :: Action -> Arata ()
+doAction' (IntroductionAction uid' nick' user' name' host' acc ts') = addClient Client
+        { uid       = uid'
+        , nick      = nick'
+        , ts        = ts'
+        , user      = user'
+        , realName  = name'
+        , userModes = []
+        , vHost     = "127.0.0.1"
+        , host      = host'
+        , ip        = "127.0.0.1"
+        , cert      = Nothing
+        , account   = acc
+        }
 doAction' (AuthAction src acc) = getClient src >>= \case
     Nothing  -> fail "[FATAL] desynchronization"
     Just cli -> addClient cli { account = acc }

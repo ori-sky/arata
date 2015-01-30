@@ -70,6 +70,12 @@ getSection section = do
 getClient :: String -> Arata (Maybe Client)
 getClient uid' = gets clients >>= return . M.lookup uid'
 
+getClientByNick :: String -> Arata (Maybe Client)
+getClientByNick nick' = gets clients >>= return . M.filter (pred' . nick) >>= \clis -> if M.null clis
+    then liftIO (print nick') >> return Nothing
+    else return $ Just (snd (M.elemAt 0 clis))
+  where pred' = (== map toUpper nick') . map toUpper
+
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })
 

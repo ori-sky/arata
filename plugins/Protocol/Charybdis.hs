@@ -13,6 +13,8 @@
  - limitations under the License.
  -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Protocol.Charybdis where
 
 import Numeric (showIntAtBase)
@@ -21,7 +23,7 @@ import Data.Maybe (fromMaybe)
 import Control.Monad (liftM)
 import Text.Printf (printf)
 import Arata.Types
-import Arata.Helper (getConfig)
+import Arata.Helper (getConfig, getClientByNick)
 
 exports = [ProtocolExport from to mkUid]
 
@@ -31,7 +33,12 @@ from (Message _ _ "SERVER" (name':"1":_)) = return [RegistrationEvent name']
 from (Message _ _ "EUID" (nick:_:ts:('+':uModes):user:vHost:ip:uid:host:acc:name:_)) = return [IntroductionEvent uid nick user name ip host vHost uModes mAcc (Just (read ts))]
   where mAcc = if acc == "*" then Nothing else Just acc
 from (Message _ (Just (StringPrefix src)) "NICK" (newNick:newTs:_)) = return [NickEvent src newNick (Just (read newTs))]
-from (Message _ (Just (StringPrefix src)) "PRIVMSG" (dst:msg:_)) = return [PrivmsgEvent src dst msg]
+from (Message _ (Just (StringPrefix src)) "PRIVMSG" (dst:msg:_))
+    | xs == ""  = return [PrivmsgEvent src dst msg]
+    | otherwise = getClientByNick dstNick >>= \case
+        Nothing  -> return []
+        Just cli -> return [PrivmsgEvent src (uid cli) msg]
+  where (dstNick, xs) = (break (== '@') dst)
 from (Message _ (Just (StringPrefix src)) "ENCAP" (_:"CERTFP":cert':xs)) = return [CertEvent src cert']
 from _ = return []
 
