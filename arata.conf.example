@@ -2,7 +2,8 @@
 id = 0AR
 name = services.int
 description: Arata IRC Services
-plugins: NickServ
+plugins: Protocol.Charybdis
+         NickServ
          NickServ.Add
          NickServ.Confirm
          NickServ.Del
