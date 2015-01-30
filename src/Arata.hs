@@ -95,7 +95,6 @@ handleEvent' (IntroductionEvent uid' nick' user' name' ip' host' vHost' uModes a
         , ip        = ip'
         , cert      = Nothing
         , account   = acc
-        , privmsgH  = Nothing
         }
     return []
 handleEvent' (CertEvent src crt) = getClient src >>= \case
