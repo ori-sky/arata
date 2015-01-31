@@ -23,6 +23,10 @@ plugins: Protocol.Charybdis
 [local]
 password = password
 
+# the following options should only be changed if you know what you are doing
+host = *   # bind on any available interface
+port = 0   # bind on any available port
+
 [remote]
 host = 127.0.0.1
 port = 6697

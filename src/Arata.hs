@@ -24,9 +24,10 @@ import Data.Acid
 import Control.Monad.State
 import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
+import System.IO (IOMode(ReadWriteMode))
 import System.IO.Error
-import qualified Network as N
-import Network.Connection
+import qualified Network.Socket as S
+import qualified Network.Connection as C
 import Arata.Types
 import Arata.Config
 import Arata.Message
@@ -44,21 +45,33 @@ run = do
         threadDelay 3000000
   where load' n = putStrLn ("loading plugin `" ++ n ++ "`") >> load n
 
-connect :: ConfigParser -> IO Connection
+connect :: ConfigParser -> IO C.Connection
 connect config = do
-    putStrLn ("Connecting to `" ++ host' ++ ':' : (if tls then "+" else "") ++ show port ++ "`")
-    ctx <- initConnectionContext
-    h <- N.connectTo host' (N.PortNumber (fromIntegral port))
-    connectFromHandle ctx h (ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
+    putStrLn ("connecting to `" ++ host' ++ ':' : (if tls then "+" else "") ++ show port ++ "`")
+    S.getAddrInfo preferred (Just host') (Just (show port)) >>= \case
+        []       -> fail "failed to resolve remote address"
+        (addr:_) -> do
+            sock <- S.socket (S.addrFamily addr) (S.addrSocketType addr) (S.addrProtocol addr)
+            S.getAddrInfo preferred (Just $ if localHost == "*" then "0.0.0.0" else localHost)
+                                           (if localPort ==  0  then Nothing else Just (show localPort)) >>= \case
+                []           -> fail "failed to resolve bind address"
+                (bindAddr:_) -> S.bind sock (S.addrAddress bindAddr)
+            S.connect sock (S.addrAddress addr)
+            hdl <- S.socketToHandle sock ReadWriteMode
+            ctx <- C.initConnectionContext
+            C.connectFromHandle ctx hdl (C.ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
   where host' = getConfig' config "remote" "host"
         port  = getConfig' config "remote" "port" :: Int
         tls   = getConfig' config "remote" "tls"  :: Bool
-        tlsSettings = if tls then Just (TLSSettingsSimple True False False) else Nothing
+        localHost = getConfig' config "local" "host"
+        localPort = getConfig' config "local" "port" :: Int
+        preferred = Just S.defaultHints { S.addrFlags = [S.AI_ALL] }
+        tlsSettings = if tls then Just (C.TLSSettingsSimple True False False) else Nothing
 
-disconnect :: Connection -> IO ()
+disconnect :: C.Connection -> IO ()
 disconnect con = do
-    putStrLn "Disconnected"
-    connectionClose con
+    putStrLn "disconnected"
+    C.connectionClose con
 
 runLoop :: Arata ()
 runLoop = do

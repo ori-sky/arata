@@ -128,6 +128,8 @@ defaultCP = case eitherCP of
                                                \ NickServ.Ungroup\
                                                \ ChanServ"
             >>= add_section "local"
+            >>= set "local"    "host"          "*"
+            >>= set "local"    "port"          "0"
             >>= set "local"     "password"      "password"
             >>= add_section "remote"
             >>= set "remote"    "host"          "127.0.0.1"
