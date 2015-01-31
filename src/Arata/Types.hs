@@ -18,6 +18,7 @@
 
 module Arata.Types where
 
+import Data.Char (toLower)
 import Data.Typeable
 import qualified Data.Map as M
 import Data.IxSet
@@ -154,7 +155,7 @@ data Account = Account
     } deriving (Eq, Ord, Typeable, Show)
 
 instance Indexable Account where
-    empty = ixSet [ixFun ((: []) . accId), ixFun ((: []) . accName)]
+    empty = ixSet [ixFun ((: []) . accId), ixFun ((: []) . map toLower . accName)]
 
 data DBState = DBState
     { accounts :: IxSet Account

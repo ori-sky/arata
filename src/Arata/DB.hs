@@ -20,6 +20,7 @@
 
 module Arata.DB where
 
+import Data.Char (toLower)
 import Data.SafeCopy
 import Data.IxSet
 import Data.Acid
@@ -37,10 +38,10 @@ queryAccountsById :: Integer -> Query DBState (IxSet Account)
 queryAccountsById x = (@= x) . accounts <$> ask
 
 queryAccountsByNick :: String -> Query DBState (IxSet Account)
-queryAccountsByNick x = (@= x) . accounts <$> ask
+queryAccountsByNick x = (@= map toLower x) . accounts <$> ask
 
 queryAccountsByName :: String -> Query DBState (IxSet Account)
-queryAccountsByName x = (@= x) . accounts <$> ask
+queryAccountsByName x = (@= map toLower x) . accounts <$> ask
 
 addAccount :: Account -> Update DBState ()
 addAccount acc = modify (\s -> s { accounts = insert acc (accounts s) })
