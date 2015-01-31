@@ -29,6 +29,7 @@ executable arata
                        ConfigFile   >= 1.1  && < 1.2,
                        acid-state   >= 0.12 && < 0.13,
                        mtl          >= 2.2  && < 2.3,
+                       network      >= 2.5  && < 3,
                        connection   >= 0.2  && < 0.3,
                        time         >= 1.4  && < 2,
                        safecopy     >= 0.7  && < 0.9,

@@ -25,6 +25,7 @@ import Control.Monad.State
 import Control.Exception (bracket)
 import Control.Concurrent (threadDelay)
 import System.IO.Error
+import qualified Network as N
 import Network.Connection
 import Arata.Types
 import Arata.Config
@@ -45,9 +46,10 @@ run = do
 
 connect :: ConfigParser -> IO Connection
 connect config = do
-    putStrLn ("Connecting to `" ++ host' ++ ':' : show port ++ "`")
+    putStrLn ("Connecting to `" ++ host' ++ ':' : (if tls then "+" else "") ++ show port ++ "`")
     ctx <- initConnectionContext
-    connectTo ctx (ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
+    h <- N.connectTo host' (N.PortNumber (fromIntegral port))
+    connectFromHandle ctx h (ConnectionParams host' (fromIntegral port) tlsSettings Nothing)
   where host' = getConfig' config "remote" "host"
         port  = getConfig' config "remote" "port" :: Int
         tls   = getConfig' config "remote" "tls"  :: Bool
