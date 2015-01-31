@@ -178,21 +178,43 @@ type FromProtocol = Message -> Arata [Event]
 type ToProtocol = Action -> Arata [Message]
 type MakeUid = Integer -> Arata String
 
-data Event = PassEvent String
+{-|
+ Events are incoming results from the upstream IRC daemon to Arata.
+-}
+data Event
+           -- | A PassEvent is recieved when the remote server sends its password. It sends a string representing the password the daemon gave.
+           = PassEvent String
+           -- | A RegistrationEvent is recieved when the remote server accepts the passwords and registers with Arata. It sends a string representing the server name from upstream.
            | RegistrationEvent String
+           -- | A PingEvent is recieved when the remote server is checking to see if Arata is still there after Arata is idle for a while. It sends a string representing text to reply to the PING with.
            | PingEvent String
+           -- | An IntroductionEvent is recieved when the remote server is announcing a new client to the network. It sends the uid, nick, username, realname, ip address, hostname, vhost, user modes, account name (or Nothing) and the timestamp (or Nothing) of the client introduced.
            | IntroductionEvent String String String String String String String [Char] (Maybe String) (Maybe Integer)
+           -- | A CertEvent is recieved when the remote server is announcing the certificate fingerprint of another client. It sends the uid of the user and the certificate fingerprint announced.
            | CertEvent String String
+           -- | A NickEvent is recieved when a remote client is changing their nickname. It sends the uid of the client, the new nickname and a integer representing the new timestamp of the user.
            | NickEvent String String (Maybe Integer)
+           -- | A PrivmsgEvent is recieved when a remote client sends a PRIVMSG to an Arata client.
            | PrivmsgEvent String String String
              deriving Show
 
-data Action = RegistrationAction String String (Maybe String)
+{-|
+ Actions are outgoing results from the Event handlers.
+-}
+data Action
+            -- | A RegistrationAction takes the server name, server description and a server password if required by the linking protocol in use. This signals the upstream irc daemon that Arata is registering with it.
+            = RegistrationAction String String (Maybe String)
+            -- | A QuitAction is for signaling a termination of the server link. It takes the server ID and the reason shown to operators.
             | QuitAction String String
+            -- | A PongAction is the result to a PingEvent. It takes a string containing the text sent in the PingEvent.
             | PongAction String
+            -- | An IntroductionAction signals the upstream IRC daemon that it is introducing a new client. This takes the uid, nick, username, realname, visible host, the account name (this is a Maybe String) and the timestamp of the client being introduced.
             | IntroductionAction String String String String String (Maybe String) Integer
+            -- | An AuthAction signals the upstream IRC daemon that a client of given UID has logged in as the given account name (Maybe String). If this account name is Nothing, the protocol module needs to translate this into the correct action for the protocol.
             | AuthAction String (Maybe String)
+            -- | A PrivmsgAction signals the upstream IRC daemon that Arata is sending a message to a channel or user. It takes the source, destination and message to send.
             | PrivmsgAction String String String
+            -- | A NoticeAction signals the upstream IRC daemon that Arata is sending a notice to a channel or user. It takes the source, destination and message to send.
             | NoticeAction String String String
               deriving Show
 
