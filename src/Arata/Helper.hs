@@ -18,6 +18,7 @@
 module Arata.Helper where
 
 import Data.Char (toUpper)
+import qualified IRC.RFC1459 as RFC (toLower)
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
 import qualified Data.IxSet as Ix
@@ -74,7 +75,7 @@ getClientByNick :: String -> Arata (Maybe Client)
 getClientByNick nick' = gets clients >>= return . M.filter (pred' . nick) >>= \clis -> if M.null clis
     then liftIO (print nick') >> return Nothing
     else return $ Just (snd (M.elemAt 0 clis))
-  where pred' = (== map toUpper nick') . map toUpper
+  where pred' = (== map RFC.toLower nick') . map RFC.toLower
 
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })

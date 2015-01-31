@@ -18,7 +18,7 @@
 
 module Arata.Types where
 
-import Data.Char (toLower)
+import IRC.RFC1459 (toLower)
 import Data.Typeable
 import qualified Data.Map as M
 import Data.IxSet

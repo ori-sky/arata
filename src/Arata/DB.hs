@@ -20,7 +20,7 @@
 
 module Arata.DB where
 
-import Data.Char (toLower)
+import IRC.RFC1459 (toLower)
 import Data.SafeCopy
 import Data.IxSet
 import Data.Acid
