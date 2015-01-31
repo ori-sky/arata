@@ -15,6 +15,9 @@
 
 {-# LANGUAGE LambdaCase #-}
 
+{-|
+Arata is the main module for Arata.
+-}
 module Arata where
 
 import Data.Maybe (fromMaybe)
@@ -32,6 +35,7 @@ import Arata.Message
 import Arata.Helper
 import Arata.Plugin.Load
 
+-- | run is the main entrypoint for Arata. It will loop over events and produce actions.
 run :: IO ()
 run = do
     cfg <- loadConfig' "arata.conf"
@@ -43,6 +47,7 @@ run = do
         threadDelay 3000000
   where load' n = putStrLn ("loading plugin `" ++ n ++ "`") >> load n
 
+-- | connect starts the remote connection to the upstream daemon defined in the configuration file.
 connect :: ConfigParser -> IO Connection
 connect config = do
     putStrLn ("Connecting to `" ++ host' ++ ':' : show port ++ "`")
@@ -53,11 +58,13 @@ connect config = do
         tls   = getConfig' config "remote" "tls"  :: Bool
         tlsSettings = if tls then Just (TLSSettingsSimple True False False) else Nothing
 
+-- | disconnect disconnects Arata from its upstream.
 disconnect :: Connection -> IO ()
 disconnect con = do
     putStrLn "Disconnected"
     connectionClose con
 
+-- | runLoop kicks off the main loop.
 runLoop :: Arata ()
 runLoop = do
     exports <- gets pluginExports
@@ -68,16 +75,19 @@ runLoop = do
     doAction (RegistrationAction name' desc (Just pass))
     loop
 
+-- | loop is a simple loop that recieves lines, turns them into events, handles them, takes the actions and sends them off.
 loop :: Arata ()
 loop = forever $ recv >>= \case
     Nothing   -> return ()
     Just line -> gets fromProtocol >>= ($ parseMessage line) >>= mapM handleEvent >>= mapM_ doAction . concat
 
+-- | handleEvent takes an Event and returns a list of Actions as the result of handling that event.
 handleEvent :: Event -> Arata [Action]
 handleEvent event = do
     liftIO (putStrLn ("-> " ++ show event))
     handleEvent' event
 
+-- | handleEvent' does the dirty work behind handling events.
 handleEvent' :: Event -> Arata [Action]
 handleEvent' (RegistrationEvent _) = burst
 handleEvent' (PingEvent str) = return [PongAction str]
@@ -114,12 +124,14 @@ handleEvent' (PrivmsgEvent src dst msg) = case words msg of
             Just cmd -> commandH cmd src dst xs
 handleEvent' _ = return []
 
+-- | doAction executes an Action and makes it into a protocol line.
 doAction :: Action -> Arata ()
 doAction action = do
     doAction' action
     gets toProtocol >>= ($ action) >>= mapM_ (send . show)
     liftIO (putStrLn ("<- " ++ show action))
 
+-- | doAction' executes any stateful changes needed with actions that change network state.
 doAction' :: Action -> Arata ()
 doAction' (IntroductionAction uid' nick' user' name' host' acc ts') = addClient Client
         { uid       = uid'
@@ -139,9 +151,11 @@ doAction' (AuthAction src acc) = getClient src >>= \case
     Just cli -> addClient cli { account = acc }
 doAction' _ = return ()
 
+-- | burst sends Arata's information to the upstream ircd.
 burst :: Arata [Action]
 burst = gets pluginExports >>= liftM concat . mapM handleExport
 
+-- | handleExport handles plugin loading by adding actions, services, or commands to the needed structures.
 handleExport :: PluginExport -> Arata [Action]
 handleExport (ProtocolExport from to mkUid) = do
     setFromProtocol from
