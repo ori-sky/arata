@@ -80,6 +80,9 @@ getClientByNick nick' = gets clients >>= return . M.filter (pred' . nick) >>= \c
 addClient :: Client -> Arata ()
 addClient cli = modify (\env -> env { clients = M.insert (uid cli) cli (clients env) })
 
+clientIsOper :: Client -> Bool
+clientIsOper cli = 'o' `elem` userModes cli
+
 firstAvailableID :: Arata Integer
 firstAvailableID = queryDB QueryAccounts >>= return . f 1 . map accId . Ix.toAscList (Ix.Proxy :: Ix.Proxy Integer)
   where
