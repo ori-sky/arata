@@ -76,6 +76,9 @@ disconnect con = do
 runLoop :: Arata ()
 runLoop = do
     exports <- gets pluginExports
+    case [export | export@(ProtocolExport {}) <- exports] of
+        []        -> liftIO (putStrLn "[WARNING] no protocol module specified in [info]plugins")
+        protocols -> mapM_ handleExport protocols
     mapM_ handleExport [export | export@(ProtocolExport {}) <- exports]
     name' <- getConfig "info" "name"
     desc <- getConfig "info" "description"
