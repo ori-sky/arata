@@ -15,13 +15,14 @@
 
 module NickServ.Ungroup where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "UNGROUP" handler)
-    { short     = "Removes your current nick from your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "UNGROUP" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Removes your current nick from your account" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

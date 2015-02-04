@@ -15,13 +15,14 @@
 
 module NickServ.Drop where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "DROP" handler)
-    { short     = "Drops your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "DROP" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Drops your account" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

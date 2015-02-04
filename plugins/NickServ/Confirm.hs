@@ -15,13 +15,14 @@
 
 module NickServ.Confirm where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "CONFIRM" handler)
-    { short     = "Confirms a previous command"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "CONFIRM" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Confirms a previous command" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

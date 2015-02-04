@@ -19,16 +19,21 @@ module NickServ.Register where
 
 import Data.Maybe
 import Data.IxSet as Ix
+import qualified Data.Map as M
 import Arata.Types
 import Arata.Helper
 import Arata.DB
+import Ext.Help
+
+import qualified Data.Map as M
+import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "REGISTER" handler)
-    { short     = "Registers a new account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "REGISTER" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Registers a new account" }
 
 handler src dst [] = nsRegister src dst Nothing Nothing
 handler src dst [pass] = nsRegister src dst (Just pass) Nothing

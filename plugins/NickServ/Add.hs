@@ -21,18 +21,19 @@ import Data.Maybe
 import Data.Char (toUpper)
 import Data.IxSet as Ix
 import Data.Time.Clock
+import qualified Data.Map as M
 import Control.Monad.State (liftIO)
 import Dated
 import Arata.Types
 import Arata.Helper
 import Arata.DB
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "ADD" handler)
-    { short     = "Adds a property to your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "ADD" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Adds a property to your account" }
 
 handler src dst [] = do
     nick <- getConfig "nickserv" "nick"

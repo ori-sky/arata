@@ -17,16 +17,17 @@
 
 module NickServ.Logout where
 
+import qualified Data.Map as M
 import Arata.Types
 import Arata.Helper (getClient)
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
 cmd :: Command
-cmd = (defaultCommand "LOGOUT" handler)
-    { short     = "Logs out of your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "LOGOUT" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Logs out of your account" }
 
 handler src dst _ = getClient src >>= \case
     Nothing -> fail "[FATAL] desynchronization"

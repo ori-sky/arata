@@ -15,13 +15,14 @@
 
 module NickServ.Show where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "SHOW" handler)
-    { short     = "Shows account properties"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "SHOW" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Shows account properties" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

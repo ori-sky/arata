@@ -19,7 +19,7 @@
 module Arata.Types where
 
 import IRC.RFC1459 (toLower)
-import Data.Typeable
+import Data.Dynamic
 import qualified Data.Map as M
 import Data.IxSet
 import Data.Acid
@@ -202,15 +202,9 @@ data Action = RegistrationAction String String (Maybe String)
 data Command = Command
     { name          :: String
     , commandH      :: CommandH
-    , short         :: String
-    , long          :: String
-    , aboutSyntax   :: String
-    , aboutTopics   :: String
-    , aboutCommands :: String
     , args          :: [CommandArg]
-    , subTopics     :: Arata Topics
-    , subCommands   :: [Command]
-    }        | Alias String String
+    , extensions    :: M.Map TypeRep Dynamic
+    } | Alias String String
 
 data CommandArg = Required String | Optional String | Optionals String
 type CommandH = String -> String -> [String] -> Arata [Action]
@@ -220,20 +214,6 @@ defaultCommand :: String -> CommandH -> Command
 defaultCommand n h = Command
     { name          = n
     , commandH      = h
-    , short         = "Short command description"
-    , long          = "This is the long description of a command."
-    , aboutSyntax   = "Syntax"
-    , aboutTopics   = "The following topics are available"
-    , aboutCommands = "The following sub-commands are available"
     , args          = []
-    , subTopics     = return []
-    , subCommands   = []
+    , extensions    = M.empty
     }
-
-data Topic = Topic
-    { topicName     :: String
-    , topicShort    :: String
-    , topicLong     :: String
-    }
-
-type Topics = [Topic]

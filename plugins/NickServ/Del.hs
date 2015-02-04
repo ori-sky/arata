@@ -15,13 +15,14 @@
 
 module NickServ.Del where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "DEL" handler)
-    { short     = "Removes a property from your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "DEL" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Removes a property from your account" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

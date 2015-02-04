@@ -15,13 +15,14 @@
 
 module NickServ.Group where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "GROUP" handler)
-    { short     = "Adds your current nick to your account"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "GROUP" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Adds your current nick to your account" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]

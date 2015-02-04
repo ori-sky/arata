@@ -15,13 +15,14 @@
 
 module NickServ.Nick where
 
+import qualified Data.Map as M
 import Arata.Types
+import Ext.Help
 
 exports = [CommandExport "nickserv" cmd]
 
-cmd = (defaultCommand "NICK" handler)
-    { short     = "Recovers a nick and changes your current nick to it"
-    , long      = "TODO"
-    }
+cmd = (defaultCommand "NICK" handler) { extensions = M.singleton (typeOf extHelp) (toDyn extHelp)}
+
+extHelp = defaultExtHelp { short = "Recovers a nick and changes your nick to it" }
 
 handler src dst _ = return [NoticeAction dst src "TODO"]
