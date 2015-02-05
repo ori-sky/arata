@@ -24,7 +24,7 @@ module Ext.Help
 ) where
 
 import Data.Dynamic (Typeable(..), toDyn, fromDyn, fromDynamic)
-import Arata.Types (Arata, Command)
+import Arata.Types (Arata)
 
 data ExtHelp = ExtHelp
     { short         :: String
