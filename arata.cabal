@@ -24,7 +24,7 @@ executable arata
                        TypeFamilies,
                        DeriveDataTypeable,
                        TemplateHaskell
-  ghc-options:         -Wall -O2 -fno-warn-missing-signatures -fno-warn-unused-do-bind
+  ghc-options:         -O2 -rtsopts -Wall -fno-warn-missing-signatures -fno-warn-unused-do-bind
   build-depends:       base         >= 4.6  && < 5,
                        ConfigFile   >= 1.1  && < 1.2,
                        acid-state   >= 0.12 && < 0.13,
